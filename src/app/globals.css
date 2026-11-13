@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-cairo: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--font-cairo);
+  background-color: #07080a;
+  color: #f1f5f9;
+  direction: rtl;
+  text-align: right;
+  overflow-x: hidden;
+}
+
+/* 3D TikTok Chromatic Aberration Text */
+.tiktok-glitch {
+  position: relative;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: -2.5px -2px 0px #00f2fe, 2.5px 2px 0px #fe2c55;
+  letter-spacing: -0.5px;
+}
+
+.tiktok-glitch-sm {
+  position: relative;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: -1.5px -1.5px 0px #00f2fe, 1.5px 1.5px 0px #fe2c55;
+}
+
+/* Layered 3D Button */
+.tiktok-btn-3d {
+  position: relative;
+  background: linear-gradient(135deg, #be185d 0%, #9d174d 100%);
+  color: #ffffff;
+  box-shadow: -3.5px 3.5px 0px #00f2fe;
+  transition: all 0.15s ease;
+}
+
+.tiktok-btn-3d:hover {
+  transform: translate(-1px, 1px);
+  box-shadow: -2px 2px 0px #00f2fe;
+}
+
+.tiktok-btn-3d:active {
+  transform: translate(-3.5px, 3.5px);
+  box-shadow: 0px 0px 0px #00f2fe;
+}
+
+/* Live Floating Card Glow Gradient Border */
+.live-neon-card {
+  position: relative;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, #00f2fe 0%, #d946ef 50%, #fe2c55 100%);
+  padding: 3px;
+  box-shadow: 0 10px 40px -10px rgba(0, 242, 254, 0.35), 0 10px 40px -10px rgba(254, 44, 85, 0.35);
+}
+
+.live-neon-inner {
+  background: #0f1117;
+  border-radius: calc(1.5rem - 3px);
+  padding: 1.25rem 1.5rem;
+  color: #ffffff;
+}
+
+/* Avatar Ring */
+.tiktok-avatar-ring {
+  padding: 3.5px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #00f2fe 0%, #fe2c55 100%);
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0c10;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #272a38;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3b4055;
+}
