@@ -26,7 +26,12 @@ import {
   Video,
   ChevronLeft,
   ChevronRight,
-  Info
+  FastForward,
+  Play,
+  Bell,
+  Clock,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -34,8 +39,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<AnonymousMessage[]>([]);
-  const [activeTab, setActiveTab] = useState<'messages' | 'live' | 'settings'>('live');
+  const [activeTab, setActiveTab] = useState<'live' | 'messages' | 'settings'>('live');
   const [activeOverlayMsgId, setActiveOverlayMsgId] = useState<string | null>(null);
+  const [skipOffset, setSkipOffset] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedObs, setCopiedObs] = useState(false);
@@ -55,14 +61,12 @@ export default function DashboardPage() {
     isLive: true,
   });
 
-  // Load active user
   const loadUserData = async () => {
     try {
       setIsLoading(true);
       const savedUsername = localStorage.getItem('currentUser');
 
       if (!savedUsername) {
-        // Check if there are any existing users
         const usersRes = await fetch('/api/auth/users');
         const usersData = await usersRes.json();
         if (usersData.success && usersData.data && usersData.data.length > 0) {
@@ -70,7 +74,6 @@ export default function DashboardPage() {
           localStorage.setItem('currentUser', firstUser);
           await fetchUserData(firstUser);
         } else {
-          // No user exists yet, redirect to register
           router.push('/register');
           return;
         }
@@ -106,6 +109,10 @@ export default function DashboardPage() {
       const msgData = await msgRes.json();
       if (msgData.success) {
         setMessages(msgData.data);
+        // If no message is active, select the first available
+        if (!userData.data.activeOverlayMessageId && msgData.data.length > 0) {
+          setActiveOverlayMsgId(msgData.data[0].id);
+        }
       }
     } else {
       localStorage.removeItem('currentUser');
@@ -116,7 +123,7 @@ export default function DashboardPage() {
   useEffect(() => {
     loadUserData();
 
-    // Auto-refresh messages every 4 seconds
+    // Auto-refresh messages every 3 seconds to keep queue count accurate
     const interval = setInterval(() => {
       const savedUser = localStorage.getItem('currentUser');
       if (savedUser) {
@@ -127,7 +134,7 @@ export default function DashboardPage() {
           })
           .catch(() => {});
       }
-    }, 4000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
@@ -153,16 +160,17 @@ export default function DashboardPage() {
     setTimeout(() => setCopiedObs(false), 2000);
   };
 
-  const handleToggleOverlayMsg = async (msgId: string) => {
+  // Lock message firmly on stream
+  const handleSetOverlayMsg = async (msgId: string | null) => {
     if (!currentUser) return;
-    const nextId = activeOverlayMsgId === msgId ? null : msgId;
-    setActiveOverlayMsgId(nextId);
+    setActiveOverlayMsgId(msgId);
+    setSkipOffset(0); // reset skip queue when user manually picks a message
 
     try {
       await fetch(`/api/overlay/${currentUser.username}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messageId: nextId }),
+        body: JSON.stringify({ messageId: msgId }),
       });
     } catch (err) {
       console.error(err);
@@ -176,7 +184,8 @@ export default function DashboardPage() {
       if (res.ok) {
         setMessages((prev) => prev.filter((m) => m.id !== msgId));
         if (activeOverlayMsgId === msgId) {
-          setActiveOverlayMsgId(null);
+          const remaining = messages.filter((m) => m.id !== msgId);
+          handleSetOverlayMsg(remaining.length > 0 ? remaining[0].id : null);
         }
       }
     } catch (err) {
@@ -254,7 +263,35 @@ export default function DashboardPage() {
     }
   };
 
-  const activeMsg = messages.find((m) => m.id === activeOverlayMsgId) || messages[0] || null;
+  // Find the firmly locked active message
+  const activeMsg = messages.find((m) => m.id === activeOverlayMsgId) || null;
+
+  // Calculate messages received AFTER the currently displayed message
+  // Messages are sorted newest to oldest. So newer messages have m.createdAt > activeMsg.createdAt
+  const newerMessages = activeMsg
+    ? messages.filter((m) => m.createdAt > activeMsg.createdAt).sort((a, b) => a.createdAt - b.createdAt) // oldest of the new messages first
+    : [];
+
+  const newerCount = newerMessages.length;
+
+  // The "Next in Line" message taking skipOffset into account
+  const nextInLineMsg = newerMessages.length > skipOffset ? newerMessages[skipOffset] : null;
+
+  // Handle Skip (سكب)
+  const handleSkipNext = () => {
+    if (skipOffset + 1 < newerMessages.length) {
+      setSkipOffset((prev) => prev + 1);
+    } else {
+      alert('لا توجد رسائل أخرى في الانتظار لتخطيها حالياً');
+    }
+  };
+
+  // Handle Display Next (عرض الرسالة التالية في اللايف)
+  const handleShowNextInLine = () => {
+    if (nextInLineMsg) {
+      handleSetOverlayMsg(nextInLineMsg.id);
+    }
+  };
 
   const filteredMessages = messages.filter((m) => {
     if (filter === 'unread') return !m.isRead;
@@ -313,7 +350,7 @@ export default function DashboardPage() {
             <>
               <button
                 onClick={handleCopyLink}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 shadow-sm"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 shadow-sm cursor-pointer"
                 title="نسخ رابط البايو"
               >
                 {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -332,7 +369,7 @@ export default function DashboardPage() {
               <button
                 onClick={handleLogout}
                 title="تسجيل الخروج"
-                className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 transition-colors"
+                className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -347,7 +384,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab('live')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
               activeTab === 'live'
                 ? 'bg-gradient-to-r from-rose-500/20 to-purple-500/20 text-rose-400 border border-rose-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -362,7 +399,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setActiveTab('messages')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
               activeTab === 'messages'
                 ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -377,7 +414,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
               activeTab === 'settings'
                 ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -391,7 +428,7 @@ export default function DashboardPage() {
         {/* TAB 1: LIVE SIMULATOR & OBS OVERLAY */}
         {activeTab === 'live' && (
           <div className="space-y-6">
-            {/* Top OBS Banner & Quick Setup (Matching User Screenshot directly) */}
+            {/* Top OBS Banner & Quick Setup */}
             <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-purple-950/40 via-[#11131c] to-cyan-950/40 border border-cyan-500/20 shadow-xl flex flex-col md:flex-row items-center justify-between gap-5">
               <div className="space-y-2 text-center md:text-right flex-1">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[11px] font-bold">
@@ -399,10 +436,10 @@ export default function DashboardPage() {
                   <span>ربط الكارت مع TikTok Live Studio أو OBS Studio</span>
                 </div>
                 <h3 className="text-lg font-black text-white">
-                  اجعل رسائل المتابعين تظهر مباشرة فوق كاميرتك أثناء البث!
+                  التحكم المباشر في كارت اللايف والرسائل الواردة
                 </h3>
                 <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                  انسخ الرابط الشفاف بالأسفل، وأضفه في برنامج البث كمصدر متصفح (Browser Source). سيظهر الكارت النيون تلقائياً بدون أي خلفية سوداء!
+                  الرسالة المعروضة ثابتة ومقفولة على الشاشة، ولن تتغير تلقائياً إلا عندما تضغط على "الرسالة التالية" أو تختار رسالة أخرى بنفسك.
                 </p>
               </div>
 
@@ -435,40 +472,111 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Quick Step Guide Banner */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-2xl bg-[#0f1118] border border-slate-800 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center text-xs font-black">
-                  ١
+            {/* QUEUE STATUS BAR (عداد الرسائل الجديدة في الانتظار) */}
+            <div className="p-4 rounded-2xl bg-[#0f1118] border border-cyan-500/30 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-rose-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+                  <Bell className="w-5 h-5 animate-bounce" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-white">انسخ الرابط الشفاف</p>
-                  <p className="text-[11px] text-slate-400">اضغط زر "نسخ رابط الـ OBS" بالأعلى</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-white">طابور الرسائل الجديدة:</span>
+                    {newerCount > 0 ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-xs font-black shadow-md shadow-rose-950/50 animate-pulse">
+                        +{newerCount} رسائل جديدة وصلت بعد هذه الرسالة
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
+                        ✓ أنت واقف على أحدث رسالة حالياً
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    اللايف ثابت على الرسالة الحالية، ولن تتغير إلا بإرادتك عبر الأزرار بالأسفل.
+                  </p>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#0f1118] border border-slate-800 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center justify-center text-xs font-black">
-                  ٢
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-white">افتح برنامج البث</p>
-                  <p className="text-[11px] text-slate-400">TikTok Live Studio أو OBS Studio</p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-[#0f1118] border border-slate-800 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30 flex items-center justify-center text-xs font-black">
-                  ٣
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-white">أضف Browser Source</p>
-                  <p className="text-[11px] text-slate-400">الصق الرابط واضبط العرض 650 والارتفاع 400</p>
-                </div>
+              {/* Status indicator */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span className="text-slate-300 font-bold">الكارت متصل بالبث المباشر</span>
               </div>
             </div>
 
-            {/* Live Stream Viewport Mockup (Matching User Screenshot directly) */}
+            {/* NEXT MESSAGE PREVIEW & SKIP BOX (معاينة الرسالة التالية وزر السكب) */}
+            {newerCount > 0 && (
+              <div className="p-5 rounded-3xl bg-gradient-to-r from-[#141824] to-[#121520] border-2 border-dashed border-cyan-500/40 shadow-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 font-black text-xs border border-cyan-500/40 flex items-center gap-1">
+                      <span>👀 معاينة الرسالة القادمة</span>
+                      {skipOffset > 0 && (
+                        <span className="text-[10px] bg-slate-800 px-1.5 py-0.2 rounded-full">
+                          (تم تخطي {skipOffset})
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      متبقي في الطابور: {newerCount - skipOffset} رسالة
+                    </span>
+                  </div>
+
+                  <span className="text-[11px] font-mono text-slate-400">
+                    {nextInLineMsg ? new Date(nextInLineMsg.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : ''}
+                  </span>
+                </div>
+
+                {nextInLineMsg ? (
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-2xl bg-black/50 border border-slate-800 text-right">
+                      <p className="text-white text-base font-bold leading-relaxed">
+                        {nextInLineMsg.content}
+                      </p>
+                    </div>
+
+                    {/* Next Message Action Buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                      <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                        {/* Display Next on Live */}
+                        <button
+                          onClick={handleShowNextInLine}
+                          className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-rose-500 hover:opacity-95 text-white font-extrabold text-xs shadow-lg shadow-cyan-950/40 transition-all cursor-pointer"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>عرض هذه الرسالة في اللايف الآن</span>
+                        </button>
+
+                        {/* SKIP BUTTON (زر السكب لتخطي هذه الرسالة ورؤية التي بعدها) */}
+                        <button
+                          onClick={handleSkipNext}
+                          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-black text-xs transition-all cursor-pointer shadow-sm"
+                          title="تخطي هذه الرسالة ومعاينة الرسالة التي بعدها"
+                        >
+                          <FastForward className="w-3.5 h-3.5" />
+                          <span>سكب (تخطي للرسالة التي بعدها) ⏭️</span>
+                        </button>
+                      </div>
+
+                      {/* Delete from queue */}
+                      <button
+                        onClick={() => handleDeleteMessage(nextInLineMsg.id)}
+                        className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>حذف هذه الرسالة</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-slate-900/60 text-center text-xs text-slate-400">
+                    تم تخطي جميع الرسائل في الطابور! اضغط "الرسالة السابقة" للرجوع إليها.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Live Stream Viewport Mockup */}
             <div className="relative rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl bg-slate-950 aspect-[9/16] sm:aspect-[16/10] max-w-3xl mx-auto flex flex-col justify-between p-4 sm:p-6">
               {/* Simulated TikTok Live Header */}
               <div className="flex items-center justify-between text-xs text-white z-10">
@@ -526,37 +634,47 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Quick Cycle Controls */}
+            {/* Quick Cycle & Navigation Controls */}
             {messages.length > 0 && (
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
                   onClick={() => {
                     const currentIdx = messages.findIndex((m) => m.id === activeOverlayMsgId);
-                    const prevIdx = currentIdx > 0 ? currentIdx - 1 : messages.length - 1;
-                    handleToggleOverlayMsg(messages[prevIdx].id);
+                    const prevIdx = currentIdx < messages.length - 1 ? currentIdx + 1 : 0; // older message
+                    handleSetOverlayMsg(messages[prevIdx].id);
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
-                  <span>الرسالة السابقة</span>
+                  <span>الرسالة الأقدم (السابقة)</span>
                 </button>
 
                 <button
-                  onClick={() => handleToggleOverlayMsg(activeOverlayMsgId || '')}
-                  className="px-5 py-2 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30 transition-all"
+                  onClick={() => handleSetOverlayMsg(activeOverlayMsgId ? null : (messages[0]?.id || null))}
+                  className="px-5 py-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30 transition-all cursor-pointer"
                 >
-                  {activeOverlayMsgId ? 'إخفاء الكارت مؤقتاً' : 'إظهار الكارت'}
+                  {activeOverlayMsgId ? 'إخفاء الكارت مؤقتاً من البث' : 'إظهار الكارت على البث'}
                 </button>
+
+                {nextInLineMsg && (
+                  <button
+                    onClick={handleSkipNext}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/30 transition-all cursor-pointer"
+                  >
+                    <FastForward className="w-4 h-4" />
+                    <span>سكب الرسالة التالية ⏭️</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
                     const currentIdx = messages.findIndex((m) => m.id === activeOverlayMsgId);
-                    const nextIdx = currentIdx < messages.length - 1 ? currentIdx + 1 : 0;
-                    handleToggleOverlayMsg(messages[nextIdx].id);
+                    const nextIdx = currentIdx > 0 ? currentIdx - 1 : messages.length - 1; // newer message
+                    handleSetOverlayMsg(messages[nextIdx].id);
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 cursor-pointer"
                 >
-                  <span>الرسالة التالية</span>
+                  <span>الرسالة الأحدث (التالية)</span>
                   <ChevronLeft className="w-4 h-4" />
                 </button>
               </div>
@@ -573,7 +691,7 @@ export default function DashboardPage() {
                 <span className="text-xs font-bold text-slate-400">تصفية:</span>
                 <button
                   onClick={() => setFilter('all')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     filter === 'all'
                       ? 'bg-cyan-500 text-black'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -583,7 +701,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setFilter('pinned')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     filter === 'pinned'
                       ? 'bg-cyan-500 text-black'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -663,7 +781,7 @@ export default function DashboardPage() {
                       {/* Actions */}
                       <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                         <button
-                          onClick={() => handleToggleOverlayMsg(msg.id)}
+                          onClick={() => handleSetOverlayMsg(isOnScreen ? null : msg.id)}
                           className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                             isOnScreen
                               ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/40'

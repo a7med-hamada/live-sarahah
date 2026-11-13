@@ -18,14 +18,6 @@ export async function GET(
       activeMessage = Storage.getMessageById(user.activeOverlayMessageId);
     }
 
-    // If none pinned, get latest message
-    if (!activeMessage) {
-      const all = Storage.getMessagesForUser(username);
-      if (all.length > 0) {
-        activeMessage = all[0];
-      }
-    }
-
     return NextResponse.json({
       success: true,
       data: {

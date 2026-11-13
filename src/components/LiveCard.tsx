@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { AnonymousMessage, UserProfile } from '@/lib/types';
-import { MessageSquare, Sparkles, Pin } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
 interface LiveCardProps {
   user: Partial<UserProfile>;
@@ -19,7 +19,7 @@ export default function LiveCard({
 }: LiveCardProps) {
   if (!message) {
     return (
-      <div className={`live-neon-card max-w-lg w-full mx-auto ${className}`}>
+      <div className={`live-neon-card max-w-xl w-full mx-auto ${className}`}>
         <div className="live-neon-inner flex flex-col items-center justify-center p-8 text-center space-y-3 min-h-[220px]">
           <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-cyan-400">
             <MessageSquare className="w-6 h-6 animate-pulse" />
@@ -47,7 +47,7 @@ export default function LiveCard({
           {/* User Brand */}
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-sm text-white tracking-wide">
-              {user.bigTitle || user.displayName || 'Nexon Live'}
+              {user.bigTitle || user.displayName || 'Live Stream'}
             </span>
             <div className="w-6 h-6 rounded-full overflow-hidden border border-cyan-400/80 shadow-sm">
               <img
@@ -60,8 +60,8 @@ export default function LiveCard({
         </div>
 
         {/* Message Content */}
-        <div className="py-2 px-1">
-          <p className="text-[17px] sm:text-[19px] font-bold text-white leading-relaxed tracking-normal text-right select-text">
+        <div className="py-3 px-2 min-h-[70px] flex items-center justify-start">
+          <p className="text-[18px] sm:text-[20px] font-black text-white leading-relaxed tracking-normal text-right select-text w-full">
             {message.content}
           </p>
         </div>

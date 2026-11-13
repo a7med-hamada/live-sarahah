@@ -45,12 +45,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Add message without touching activeOverlayMessageId so current live card never shifts!
     const message = Storage.addMessage(username, content);
-
-    // If recipient has no active overlay message, auto-set this one
-    if (!recipient.activeOverlayMessageId) {
-      Storage.setActiveOverlayMessage(username, message.id);
-    }
 
     return NextResponse.json({ success: true, data: message }, { status: 201 });
   } catch (error: any) {
