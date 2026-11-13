@@ -7,13 +7,14 @@ import { AnonymousMessage, UserProfile } from '@/lib/types';
 
 export default function OverlayPage() {
   const params = useParams();
-  const username = (params?.username as string) || 'nexon';
+  const username = (params?.username as string) || '';
 
   const [user, setUser] = useState<Partial<UserProfile>>({
     username,
-    displayName: 'Nexon',
-    bigTitle: 'Nexon Live',
+    displayName: 'Live Stream',
+    bigTitle: 'Live Stream',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    cardCustomization: {},
   });
   const [message, setMessage] = useState<AnonymousMessage | null>(null);
   const [animating, setAnimating] = useState(false);
@@ -22,6 +23,7 @@ export default function OverlayPage() {
     let lastMsgId = '';
 
     async function pollOverlay() {
+      if (!username) return;
       try {
         const res = await fetch(`/api/overlay/${username}`);
         const data = await res.json();
@@ -47,7 +49,7 @@ export default function OverlayPage() {
     }
 
     pollOverlay();
-    const interval = setInterval(pollOverlay, 2500);
+    const interval = setInterval(pollOverlay, 2000);
     return () => clearInterval(interval);
   }, [username]);
 
@@ -59,7 +61,11 @@ export default function OverlayPage() {
           animating ? 'scale-105 filter drop-shadow-[0_0_30px_#00f2fe]' : 'scale-100'
         }`}
       >
-        <LiveCard user={user} message={message} />
+        <LiveCard
+          user={user}
+          message={message}
+          customization={user.cardCustomization}
+        />
       </div>
     </div>
   );

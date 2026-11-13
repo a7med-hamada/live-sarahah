@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserProfile, AnonymousMessage } from '@/lib/types';
+import { UserProfile, AnonymousMessage, CardCustomization } from '@/lib/types';
 import LiveCard from '@/components/LiveCard';
 import TikTokGuideModal from '@/components/TikTokGuideModal';
 import {
@@ -30,8 +30,13 @@ import {
   Play,
   Bell,
   Clock,
-  CheckCircle2,
-  AlertTriangle
+  Sliders,
+  Type,
+  AlignRight,
+  AlignCenter,
+  AlignLeft,
+  Image as ImageIcon,
+  Save
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -47,8 +52,23 @@ export default function DashboardPage() {
   const [copiedObs, setCopiedObs] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [savingCardConfig, setSavingCardConfig] = useState(false);
+  const [cardSaveSuccess, setCardSaveSuccess] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread' | 'pinned'>('all');
   const [showGuideModal, setShowGuideModal] = useState(false);
+
+  // Card Customization state (live adjustable controls)
+  const [cardConfig, setCardConfig] = useState<CardCustomization>({
+    messageFontSize: 24,
+    nameFontSize: 15,
+    footerFontSize: 12,
+    avatarSize: 28,
+    showAvatar: true,
+    showName: true,
+    cardHeaderName: '',
+    textAlign: 'right',
+    badgeText: 'رسالة مجهولة 💌',
+  });
 
   // Profile Form state
   const [formData, setFormData] = useState({
@@ -94,6 +114,21 @@ export default function DashboardPage() {
     if (userData.success && userData.data) {
       setCurrentUser(userData.data);
       setActiveOverlayMsgId(userData.data.activeOverlayMessageId || null);
+
+      // Load card customization
+      const userCardCfg: CardCustomization = userData.data.cardCustomization || {};
+      setCardConfig({
+        messageFontSize: userCardCfg.messageFontSize ?? 24,
+        nameFontSize: userCardCfg.nameFontSize ?? 15,
+        footerFontSize: userCardCfg.footerFontSize ?? 12,
+        avatarSize: userCardCfg.avatarSize ?? 28,
+        showAvatar: userCardCfg.showAvatar !== false,
+        showName: userCardCfg.showName !== false,
+        cardHeaderName: userCardCfg.cardHeaderName || userData.data.displayName || '',
+        textAlign: userCardCfg.textAlign || 'right',
+        badgeText: userCardCfg.badgeText || 'رسالة مجهولة 💌',
+      });
+
       setFormData({
         displayName: userData.data.displayName || '',
         bigTitle: userData.data.bigTitle || '',
@@ -109,7 +144,6 @@ export default function DashboardPage() {
       const msgData = await msgRes.json();
       if (msgData.success) {
         setMessages(msgData.data);
-        // If no message is active, select the first available
         if (!userData.data.activeOverlayMessageId && msgData.data.length > 0) {
           setActiveOverlayMsgId(msgData.data[0].id);
         }
@@ -123,7 +157,6 @@ export default function DashboardPage() {
   useEffect(() => {
     loadUserData();
 
-    // Auto-refresh messages every 3 seconds to keep queue count accurate
     const interval = setInterval(() => {
       const savedUser = localStorage.getItem('currentUser');
       if (savedUser) {
@@ -164,7 +197,7 @@ export default function DashboardPage() {
   const handleSetOverlayMsg = async (msgId: string | null) => {
     if (!currentUser) return;
     setActiveOverlayMsgId(msgId);
-    setSkipOffset(0); // reset skip queue when user manually picks a message
+    setSkipOffset(0);
 
     try {
       await fetch(`/api/overlay/${currentUser.username}`, {
@@ -174,6 +207,31 @@ export default function DashboardPage() {
       });
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // Save Card Customizations (Font sizes, avatar size, name)
+  const handleSaveCardCustomization = async () => {
+    if (!currentUser) return;
+    setSavingCardConfig(true);
+    setCardSaveSuccess(false);
+
+    try {
+      const res = await fetch(`/api/user/${currentUser.username}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardCustomization: cardConfig }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentUser(data.data);
+        setCardSaveSuccess(true);
+        setTimeout(() => setCardSaveSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingCardConfig(false);
     }
   };
 
@@ -263,21 +321,15 @@ export default function DashboardPage() {
     }
   };
 
-  // Find the firmly locked active message
   const activeMsg = messages.find((m) => m.id === activeOverlayMsgId) || null;
 
-  // Calculate messages received AFTER the currently displayed message
-  // Messages are sorted newest to oldest. So newer messages have m.createdAt > activeMsg.createdAt
   const newerMessages = activeMsg
-    ? messages.filter((m) => m.createdAt > activeMsg.createdAt).sort((a, b) => a.createdAt - b.createdAt) // oldest of the new messages first
+    ? messages.filter((m) => m.createdAt > activeMsg.createdAt).sort((a, b) => a.createdAt - b.createdAt)
     : [];
 
   const newerCount = newerMessages.length;
-
-  // The "Next in Line" message taking skipOffset into account
   const nextInLineMsg = newerMessages.length > skipOffset ? newerMessages[skipOffset] : null;
 
-  // Handle Skip (سكب)
   const handleSkipNext = () => {
     if (skipOffset + 1 < newerMessages.length) {
       setSkipOffset((prev) => prev + 1);
@@ -286,7 +338,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Handle Display Next (عرض الرسالة التالية في اللايف)
   const handleShowNextInLine = () => {
     if (nextInLineMsg) {
       handleSetOverlayMsg(nextInLineMsg.id);
@@ -436,10 +487,10 @@ export default function DashboardPage() {
                   <span>ربط الكارت مع TikTok Live Studio أو OBS Studio</span>
                 </div>
                 <h3 className="text-lg font-black text-white">
-                  التحكم المباشر في كارت اللايف والرسائل الواردة
+                  التحكم المباشر في أحجام ونصوص كارت اللايف
                 </h3>
                 <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                  الرسالة المعروضة ثابتة ومقفولة على الشاشة، ولن تتغير تلقائياً إلا عندما تضغط على "الرسالة التالية" أو تختار رسالة أخرى بنفسك.
+                  يمكنك تعديل حجم كل نص بشكل مستقل، وتغيير حجم ومظهر صورة البروفايل، وتعديل اسمك المعروض في الكارت مع معاينة فورية ومباشرة!
                 </p>
               </div>
 
@@ -472,7 +523,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* QUEUE STATUS BAR (عداد الرسائل الجديدة في الانتظار) */}
+            {/* QUEUE STATUS BAR */}
             <div className="p-4 rounded-2xl bg-[#0f1118] border border-cyan-500/30 flex flex-wrap items-center justify-between gap-3 shadow-lg">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-rose-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
@@ -497,14 +548,13 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Status indicator */}
               <div className="flex items-center gap-2 text-xs">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
                 <span className="text-slate-300 font-bold">الكارت متصل بالبث المباشر</span>
               </div>
             </div>
 
-            {/* NEXT MESSAGE PREVIEW & SKIP BOX (معاينة الرسالة التالية وزر السكب) */}
+            {/* NEXT MESSAGE PREVIEW & SKIP BOX */}
             {newerCount > 0 && (
               <div className="p-5 rounded-3xl bg-gradient-to-r from-[#141824] to-[#121520] border-2 border-dashed border-cyan-500/40 shadow-xl space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -535,10 +585,8 @@ export default function DashboardPage() {
                       </p>
                     </div>
 
-                    {/* Next Message Action Buttons */}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                       <div className="flex items-center gap-2 flex-1 sm:flex-initial">
-                        {/* Display Next on Live */}
                         <button
                           onClick={handleShowNextInLine}
                           className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-rose-500 hover:opacity-95 text-white font-extrabold text-xs shadow-lg shadow-cyan-950/40 transition-all cursor-pointer"
@@ -547,7 +595,6 @@ export default function DashboardPage() {
                           <span>عرض هذه الرسالة في اللايف الآن</span>
                         </button>
 
-                        {/* SKIP BUTTON (زر السكب لتخطي هذه الرسالة ورؤية التي بعدها) */}
                         <button
                           onClick={handleSkipNext}
                           className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-black text-xs transition-all cursor-pointer shadow-sm"
@@ -558,7 +605,6 @@ export default function DashboardPage() {
                         </button>
                       </div>
 
-                      {/* Delete from queue */}
                       <button
                         onClick={() => handleDeleteMessage(nextInLineMsg.id)}
                         className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
@@ -602,11 +648,12 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* The Live Floating Card */}
+              {/* The Live Floating Card with Customizations */}
               <div className="my-auto z-10 w-full flex justify-center py-4">
                 <LiveCard
                   user={currentUser || { displayName: 'Streamer', bigTitle: 'Live Stream' }}
                   message={activeMsg}
+                  customization={cardConfig}
                 />
               </div>
 
@@ -640,7 +687,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => {
                     const currentIdx = messages.findIndex((m) => m.id === activeOverlayMsgId);
-                    const prevIdx = currentIdx < messages.length - 1 ? currentIdx + 1 : 0; // older message
+                    const prevIdx = currentIdx < messages.length - 1 ? currentIdx + 1 : 0;
                     handleSetOverlayMsg(messages[prevIdx].id);
                   }}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 cursor-pointer"
@@ -669,7 +716,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => {
                     const currentIdx = messages.findIndex((m) => m.id === activeOverlayMsgId);
-                    const nextIdx = currentIdx > 0 ? currentIdx - 1 : messages.length - 1; // newer message
+                    const nextIdx = currentIdx > 0 ? currentIdx - 1 : messages.length - 1;
                     handleSetOverlayMsg(messages[nextIdx].id);
                   }}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 cursor-pointer"
@@ -679,6 +726,275 @@ export default function DashboardPage() {
                 </button>
               </div>
             )}
+
+            {/* DEDICATED VISUAL SIZES & TEXT CUSTOMIZATION PANEL (لوحة التحكم في أحجام الكارت والنصوص) */}
+            <div className="p-6 sm:p-7 rounded-3xl bg-[#0f1118] border border-cyan-500/30 shadow-2xl space-y-6">
+              <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-3">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-white flex items-center gap-2">
+                    <Sliders className="w-5 h-5 text-cyan-400" />
+                    <span>لوحة التحكم في مقاسات ونصوص الكارت (تحديث مباشر على الشاشة)</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    عدل حجم كل نص وحجم صورة البروفايل ومحاذاة الرسالة بالمللي، وشاهد التغيير فوراً في الكارت بالأعلى!
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleSaveCardCustomization}
+                  disabled={savingCardConfig}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-rose-500 hover:opacity-95 text-white font-black text-xs shadow-lg shadow-cyan-950/40 transition-all cursor-pointer"
+                >
+                  {savingCardConfig ? (
+                    <span>جاري الحفظ...</span>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>حفظ المقاسات للايف والـ OBS</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {cardSaveSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs text-center font-bold animate-in fade-in">
+                  ✓ تم حفظ مقاسات ونصوص الكارت بنجاح وتم تحديث رابط الـ OBS تلقائياً!
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* 1. Message Font Size & Alignment */}
+                <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Type className="w-4 h-4 text-cyan-400" />
+                      <span>حجم خط نص الرسالة:</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 font-mono text-xs font-bold">
+                      {cardConfig.messageFontSize || 20}px
+                    </span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min="14"
+                    max="40"
+                    step="1"
+                    value={cardConfig.messageFontSize || 20}
+                    onChange={(e) =>
+                      setCardConfig({ ...cardConfig, messageFontSize: Number(e.target.value) })
+                    }
+                    className="w-full accent-cyan-400 cursor-pointer"
+                  />
+
+                  {/* Quick Presets */}
+                  <div className="flex items-center gap-1.5 pt-1">
+                    {[
+                      { label: 'صغير', size: 16 },
+                      { label: 'متوسط', size: 20 },
+                      { label: 'كبير', size: 26 },
+                      { label: 'ضخم جداً', size: 34 },
+                    ].map((p) => (
+                      <button
+                        key={p.label}
+                        onClick={() => setCardConfig({ ...cardConfig, messageFontSize: p.size })}
+                        className={`flex-1 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                          cardConfig.messageFontSize === p.size
+                            ? 'bg-cyan-500 text-black border-cyan-400'
+                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Text Alignment */}
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                    <span className="text-[11px] font-bold text-slate-300">محاذاة نص الرسالة:</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCardConfig({ ...cardConfig, textAlign: 'right' })}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border cursor-pointer ${
+                          cardConfig.textAlign === 'right'
+                            ? 'bg-cyan-500 text-black border-cyan-400'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                        }`}
+                      >
+                        <AlignRight className="w-3.5 h-3.5" />
+                        <span>يمين</span>
+                      </button>
+
+                      <button
+                        onClick={() => setCardConfig({ ...cardConfig, textAlign: 'center' })}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border cursor-pointer ${
+                          cardConfig.textAlign === 'center'
+                            ? 'bg-cyan-500 text-black border-cyan-400'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                        }`}
+                      >
+                        <AlignCenter className="w-3.5 h-3.5" />
+                        <span>وسط</span>
+                      </button>
+
+                      <button
+                        onClick={() => setCardConfig({ ...cardConfig, textAlign: 'left' })}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border cursor-pointer ${
+                          cardConfig.textAlign === 'left'
+                            ? 'bg-cyan-500 text-black border-cyan-400'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                        }`}
+                      >
+                        <AlignLeft className="w-3.5 h-3.5" />
+                        <span>يسار</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Streamer Name Controls */}
+                <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <User className="w-4 h-4 text-rose-400" />
+                      <span>اسمك المعروض في الكارت:</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-400">إظهار:</span>
+                      <input
+                        type="checkbox"
+                        checked={cardConfig.showName !== false}
+                        onChange={(e) =>
+                          setCardConfig({ ...cardConfig, showName: e.target.checked })
+                        }
+                        className="w-4 h-4 accent-rose-500 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Name Text Input */}
+                  <input
+                    type="text"
+                    value={cardConfig.cardHeaderName || ''}
+                    onChange={(e) =>
+                      setCardConfig({ ...cardConfig, cardHeaderName: e.target.value })
+                    }
+                    placeholder="اسمك في الكارت (مثال: A7md)"
+                    className="w-full bg-[#1b1f2e] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-400 font-bold"
+                  />
+
+                  {/* Name Font Size Slider */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-300">حجم خط الاسم:</span>
+                      <span className="font-mono text-rose-300 font-bold">
+                        {cardConfig.nameFontSize || 14}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="11"
+                      max="28"
+                      step="1"
+                      value={cardConfig.nameFontSize || 14}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, nameFontSize: Number(e.target.value) })
+                      }
+                      className="w-full accent-rose-500 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Badge Text */}
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                    <span className="text-[11px] font-bold text-slate-300">نص الشارة العلوية:</span>
+                    <input
+                      type="text"
+                      value={cardConfig.badgeText || ''}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, badgeText: e.target.value })
+                      }
+                      placeholder="رسالة مجهولة 💌"
+                      className="w-full bg-[#1b1f2e] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-400"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Avatar Picture & Footer Controls */}
+                <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-purple-400" />
+                      <span>صورة البروفايل في الكارت:</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-400">إظهار الصورة:</span>
+                      <input
+                        type="checkbox"
+                        checked={cardConfig.showAvatar !== false}
+                        onChange={(e) =>
+                          setCardConfig({ ...cardConfig, showAvatar: e.target.checked })
+                        }
+                        className="w-4 h-4 accent-purple-500 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Avatar Size Slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-300">حجم دائرة الصورة:</span>
+                      <span className="font-mono text-purple-300 font-bold">
+                        {cardConfig.avatarSize || 28}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="18"
+                      max="52"
+                      step="2"
+                      value={cardConfig.avatarSize || 28}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, avatarSize: Number(e.target.value) })
+                      }
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Footer Font Size Slider */}
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-300">حجم خط الفوتر (اللينك في البايو):</span>
+                      <span className="font-mono text-cyan-300 font-bold">
+                        {cardConfig.footerFontSize || 12}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="9"
+                      max="18"
+                      step="1"
+                      value={cardConfig.footerFontSize || 12}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, footerFontSize: Number(e.target.value) })
+                      }
+                      className="w-full accent-cyan-400 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Quick Save Indicator */}
+                  <div className="pt-2">
+                    <button
+                      onClick={handleSaveCardCustomization}
+                      disabled={savingCardConfig}
+                      className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>حفظ التعديلات الحالية</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

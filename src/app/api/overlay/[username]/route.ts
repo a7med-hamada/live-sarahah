@@ -27,6 +27,7 @@ export async function GET(
           bigTitle: user.bigTitle,
           avatarUrl: user.avatarUrl,
           isLive: user.isLive,
+          cardCustomization: user.cardCustomization || {},
         },
         message: activeMessage,
       },
