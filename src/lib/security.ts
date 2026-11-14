@@ -54,9 +54,16 @@ export function sanitizeText(text: string, maxLength: number = 1000): string {
 }
 
 /**
- * Strip password before sending to client
+ * Generate a cryptographically secure random session token
  */
-export function toSafeUser(user: UserProfile): Omit<UserProfile, 'password'> {
-  const { password, ...safe } = user;
+export function generateSessionToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Strip sensitive credentials (password, session tokens) before sending to client
+ */
+export function toSafeUser(user: UserProfile): Omit<UserProfile, 'password' | 'sessionToken' | 'sessionExpiresAt'> {
+  const { password, sessionToken, sessionExpiresAt, ...safe } = user;
   return safe;
 }

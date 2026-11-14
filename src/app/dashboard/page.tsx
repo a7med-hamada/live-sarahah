@@ -123,25 +123,26 @@ export default function DashboardPage() {
     isLive: true,
   });
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : '';
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}`, 'x-session-token': token } : {}),
+    };
+  };
+
   const loadUserData = async () => {
     try {
       setIsLoading(true);
       const savedUsername = localStorage.getItem('currentUser');
 
       if (!savedUsername) {
-        const usersRes = await fetch('/api/auth/users');
-        const usersData = await usersRes.json();
-        if (usersData.success && usersData.data && usersData.data.length > 0) {
-          const firstUser = usersData.data[0].username;
-          localStorage.setItem('currentUser', firstUser);
-          await fetchUserData(firstUser);
-        } else {
-          router.push('/register');
-          return;
-        }
-      } else {
-        await fetchUserData(savedUsername);
+        // High security: Do not auto-login as anyone, require login
+        router.push('/login');
+        return;
       }
+
+      await fetchUserData(savedUsername);
     } catch (err) {
       console.error('Error loading user:', err);
     } finally {
@@ -176,8 +177,10 @@ export default function DashboardPage() {
         isLive: userData.data.isLive !== false,
       });
 
-      // Get messages
-      const msgRes = await fetch(`/api/messages?username=${username}`);
+      // Get messages securely with auth token
+      const msgRes = await fetch(`/api/messages?username=${username}`, {
+        headers: getAuthHeaders(),
+      });
       const msgData = await msgRes.json();
       if (msgData.success) {
         setMessages(msgData.data);
@@ -187,6 +190,7 @@ export default function DashboardPage() {
       }
     } else {
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('sessionToken');
       router.push('/login');
     }
   };
@@ -197,7 +201,9 @@ export default function DashboardPage() {
     const interval = setInterval(() => {
       const savedUser = localStorage.getItem('currentUser');
       if (savedUser) {
-        fetch(`/api/messages?username=${savedUser}`)
+        fetch(`/api/messages?username=${savedUser}`, {
+          headers: getAuthHeaders(),
+        })
           .then((r) => r.json())
           .then((d) => {
             if (d.success) setMessages(d.data);
@@ -211,6 +217,7 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('sessionToken');
     router.push('/login');
   };
 
@@ -238,7 +245,7 @@ export default function DashboardPage() {
     try {
       await fetch(`/api/overlay/${currentUser.username}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ messageId: msgId }),
       });
     } catch (err) {
@@ -254,7 +261,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/user/${currentUser.username}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ cardCustomization: cardConfig }),
       });
       const data = await res.json();
@@ -273,7 +280,10 @@ export default function DashboardPage() {
   const handleDeleteMessage = async (msgId: string) => {
     if (!confirm('هل تريد حذف هذه الرسالة؟')) return;
     try {
-      const res = await fetch(`/api/messages/${msgId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/messages/${msgId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         setMessages((prev) => prev.filter((m) => m.id !== msgId));
         if (activeOverlayMsgId === msgId) {
@@ -291,7 +301,7 @@ export default function DashboardPage() {
       const nextPinned = !msg.isPinned;
       await fetch(`/api/messages/${msg.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ isPinned: nextPinned }),
       });
       setMessages((prev) =>
@@ -312,7 +322,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/user/${currentUser.username}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(formData),
       });
       const data = await res.json();

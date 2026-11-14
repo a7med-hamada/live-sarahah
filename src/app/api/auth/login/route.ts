@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
-import { verifyPassword, sanitizeUsername, toSafeUser } from '@/lib/security';
+import { verifyPassword, sanitizeUsername, toSafeUser, generateSessionToken } from '@/lib/security';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +23,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'كلمة المرور غير صحيحة' }, { status: 401 });
     }
 
-    return NextResponse.json({ success: true, data: toSafeUser(user) });
+    // Generate secure session token (valid for 30 days)
+    const sessionToken = generateSessionToken();
+    const sessionExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+
+    Storage.updateUserProfile(clean, {
+      sessionToken,
+      sessionExpiresAt,
+    });
+
+    const response = NextResponse.json({
+      success: true,
+      token: sessionToken,
+      data: toSafeUser(user),
+    });
+
+    // Also set httpOnly-friendly cookie
+    response.cookies.set('session_token', sessionToken, {
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60,
+      httpOnly: false, // Accessible to client for header injection if needed
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+
+    return response;
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

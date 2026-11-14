@@ -61,6 +61,9 @@ export default function RegisterPage() {
       const data = await res.json();
       if (data.success && data.data) {
         localStorage.setItem('currentUser', data.data.username);
+        if (data.token) {
+          localStorage.setItem('sessionToken', data.token);
+        }
         router.push('/dashboard');
       } else {
         setErrorMsg(data.error || 'تعذر إنشاء الحساب');

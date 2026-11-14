@@ -13,6 +13,15 @@ declare global {
   var __LIVE_DB_CACHE__: DatabaseSchema | undefined;
 }
 
+function getUpstashConfig(): { url: string; token: string } | null {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (url && token) {
+    return { url: url.replace(/\/$/, ''), token };
+  }
+  return null;
+}
+
 // Safely determine writable file path for Vercel / serverless / local
 function resolveDbPath(): { runtimePath: string; seedPath: string } {
   const seedPath = path.join(process.cwd(), 'data', 'database.json');
@@ -98,6 +107,12 @@ function initDb(): DatabaseSchema {
   }
 
   globalThis.__LIVE_DB_CACHE__ = initialData;
+
+  // 5. Trigger cloud sync in background if cloud storage is configured
+  if (getUpstashConfig()) {
+    Storage.syncFromCloud().catch(() => {});
+  }
+
   return initialData;
 }
 
@@ -112,6 +127,23 @@ function saveDb(data: DatabaseSchema): void {
     fs.writeFileSync(runtimePath, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
     console.warn('Failed to persist DB to disk (data safely held in memory cache):', err);
+  }
+
+  // Cloud Persistence via Upstash Redis / Vercel KV REST API
+  const upstash = getUpstashConfig();
+  if (upstash) {
+    try {
+      fetch(`${upstash.url}/set/live_database_v3`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${upstash.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(JSON.stringify(data)),
+      }).catch((err) => console.error('Upstash async persistence error:', err));
+    } catch (e) {
+      console.warn('Upstash fetch failed:', e);
+    }
   }
 }
 
@@ -215,5 +247,30 @@ export const Storage = {
     db.users[clean].activeOverlayMessageId = messageId;
     saveDb(db);
     return true;
+  },
+
+  async syncFromCloud(): Promise<boolean> {
+    const upstash = getUpstashConfig();
+    if (!upstash) return false;
+    try {
+      const res = await fetch(`${upstash.url}/get/live_database_v3`, {
+        headers: { Authorization: `Bearer ${upstash.token}` },
+      });
+      const data = await res.json();
+      if (data && data.result) {
+        const parsed = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+        if (parsed && parsed.users) {
+          globalThis.__LIVE_DB_CACHE__ = parsed;
+          const { runtimePath } = resolveDbPath();
+          try {
+            fs.writeFileSync(runtimePath, JSON.stringify(parsed, null, 2), 'utf-8');
+          } catch {}
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to sync from Upstash:', err);
+    }
+    return false;
   },
 };

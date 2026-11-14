@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
 import { UserProfile } from '@/lib/types';
-import { hashPassword, sanitizeUsername, sanitizeText, toSafeUser } from '@/lib/security';
+import { hashPassword, sanitizeUsername, sanitizeText, toSafeUser, generateSessionToken } from '@/lib/security';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
     }
 
     const securePasswordHash = hashPassword(password);
+    const sessionToken = generateSessionToken();
+    const sessionExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
     const newUser: UserProfile = {
       id: `usr_${Date.now()}`,
@@ -56,12 +58,27 @@ export async function POST(request: NextRequest) {
       cardCustomization: {
         titleEffect: titleEffect || 'tiktokClassic',
       },
+      sessionToken,
+      sessionExpiresAt,
       createdAt: Date.now(),
     };
 
     Storage.saveUser(newUser);
 
-    return NextResponse.json({ success: true, data: toSafeUser(newUser) });
+    const response = NextResponse.json(
+      { success: true, token: sessionToken, data: toSafeUser(newUser) },
+      { status: 201 }
+    );
+
+    response.cookies.set('session_token', sessionToken, {
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60,
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+
+    return response;
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

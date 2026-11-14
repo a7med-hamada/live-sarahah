@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
 import { sanitizeText } from '@/lib/security';
 import { containsProfanity, censorProfanity } from '@/lib/profanity';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,6 +11,15 @@ export async function GET(request: NextRequest) {
 
     if (!username) {
       return NextResponse.json({ success: false, error: 'اسم المستخدم مطلوب' }, { status: 400 });
+    }
+
+    // High security check: Only the owner of the account can view their private messages
+    const auth = authenticateRequest(request, username);
+    if (!auth.authenticated) {
+      return NextResponse.json(
+        { success: false, error: auth.error || 'غير مصرح: لا يمكنك قراءة الرسائل بدون تسجيل الدخول' },
+        { status: 401 }
+      );
     }
 
     const messages = Storage.getMessagesForUser(username);

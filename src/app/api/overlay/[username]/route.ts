@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -43,6 +44,16 @@ export async function POST(
 ) {
   try {
     const { username } = params;
+
+    // High security check: Only the owner can control which message appears on overlay
+    const auth = authenticateRequest(request, username);
+    if (!auth.authenticated) {
+      return NextResponse.json(
+        { success: false, error: auth.error || 'غير مصرح بالتحكم في شاشة البث' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { messageId } = body;
 

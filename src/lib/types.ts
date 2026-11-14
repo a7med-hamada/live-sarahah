@@ -61,6 +61,8 @@ export interface UserProfile {
   liveBadgeText: string; // "• LIVE"
   activeOverlayMessageId?: string | null;
   cardCustomization?: CardCustomization;
+  sessionToken?: string;
+  sessionExpiresAt?: number;
   createdAt: number;
 }
 

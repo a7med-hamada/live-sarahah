@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
 import { hashPassword, toSafeUser } from '@/lib/security';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -26,7 +27,21 @@ export async function POST(
 ) {
   try {
     const { username } = params;
+
+    // High security check: Only the account owner can update their profile or card customization
+    const auth = authenticateRequest(request, username);
+    if (!auth.authenticated) {
+      return NextResponse.json(
+        { success: false, error: auth.error || 'غير مصرح بتعديل بيانات هذا الحساب' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
+
+    // Prevent overwriting internal security fields
+    delete body.sessionToken;
+    delete body.sessionExpiresAt;
 
     // If password is being updated, hash it securely
     if (body.password) {
