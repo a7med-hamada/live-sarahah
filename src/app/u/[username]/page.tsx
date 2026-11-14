@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { UserProfile } from '@/lib/types';
 import { CheckCircle2, AlertCircle, Sparkles, Send, Lock, ArrowRight, Heart } from 'lucide-react';
 import Link from 'next/link';
+import { getTitleEffect } from '@/lib/titleEffects';
 
 export default function PublicSendPage() {
   const params = useParams();
@@ -137,9 +138,13 @@ export default function PublicSendPage() {
             )}
           </div>
 
-          {/* Big Name with 3D TikTok Glitch Effect */}
+          {/* Big Name with Selected 3D / Visual Effect */}
           <div className="pt-2">
-            <h1 className="text-3xl sm:text-4xl tiktok-glitch uppercase tracking-wide">
+            <h1
+              className={`text-3xl sm:text-4xl uppercase tracking-wide transition-all ${
+                getTitleEffect(user.cardCustomization?.titleEffect).cssClass
+              }`}
+            >
               {user.bigTitle || `${user.displayName} Live`}
             </h1>
           </div>

@@ -3,13 +3,16 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Radio, Lock, User, Sparkles, Camera, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Radio, Lock, User, Sparkles, Camera, AlertCircle, ArrowLeft, Wand2, Check } from 'lucide-react';
+import { TITLE_EFFECTS, TITLE_EFFECT_CATEGORIES, getTitleEffect } from '@/lib/titleEffects';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bigTitle, setBigTitle] = useState('');
+  const [titleEffect, setTitleEffect] = useState('tiktokClassic');
+  const [effectCategory, setEffectCategory] = useState('all');
   const [password, setPassword] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
@@ -47,6 +50,7 @@ export default function RegisterPage() {
           username: username.trim().toLowerCase(),
           displayName: displayName.trim() || username.trim(),
           bigTitle: bigTitle.trim() || `${displayName || username} Live`,
+          titleEffect,
           password: password.trim() || '123',
           avatarUrl,
           subtitle,
@@ -156,25 +160,86 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Big Title with 3D Preview */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-300">
-              الاسم الكبير (بتأثير الـ 3D التيك توك):
-            </label>
+          {/* Big Title with 30 Effects Selector */}
+          <div className="space-y-2 p-3.5 rounded-2xl bg-[#141622] border border-cyan-500/20">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Wand2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span>الاسم الكبير والتايتل (اختر من 30 تأثيراً خرافياً):</span>
+              </label>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/30">
+                30 تأثير متاح
+              </span>
+            </div>
+
             <input
               type="text"
               value={bigTitle}
               onChange={(e) => setBigTitle(e.target.value)}
-              placeholder="مثال: Ahmed Live"
+              placeholder="مثال: Ahmed Live أو A7MD"
               className="w-full bg-[#181a24] border border-slate-800 focus:border-cyan-400 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none font-bold"
             />
-            {bigTitle && (
-              <div className="p-2 rounded-xl bg-black/50 border border-slate-800 text-center">
-                <span className="text-xl tiktok-glitch uppercase tracking-wide">
-                  {bigTitle}
-                </span>
-              </div>
-            )}
+
+            {/* Live Big Preview of Selected Effect */}
+            <div className="p-3 rounded-xl bg-black/70 border border-slate-800/80 text-center flex flex-col items-center justify-center min-h-[56px] shadow-inner">
+              <span className={`text-2xl uppercase tracking-wide transition-all ${getTitleEffect(titleEffect).cssClass}`}>
+                {bigTitle || displayName || username || 'A7MD LIVE'}
+              </span>
+              <span className="text-[10px] text-slate-400 mt-1">
+                تأثير حالي: <strong className="text-cyan-400">{getTitleEffect(titleEffect).nameAr}</strong>
+              </span>
+            </div>
+
+            {/* Category Tabs */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 pt-1 no-scrollbar">
+              {TITLE_EFFECT_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setEffectCategory(cat.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all ${
+                    effectCategory === cat.id
+                      ? 'bg-gradient-to-r from-cyan-500 to-pink-500 text-white shadow-md'
+                      : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {cat.nameAr}
+                </button>
+              ))}
+            </div>
+
+            {/* 30 Effects Grid / Mini Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+              {TITLE_EFFECTS.filter(
+                (eff) => effectCategory === 'all' || eff.category === effectCategory
+              ).map((eff) => {
+                const isSelected = titleEffect === eff.id;
+                return (
+                  <button
+                    key={eff.id}
+                    type="button"
+                    onClick={() => setTitleEffect(eff.id)}
+                    className={`p-2 rounded-xl text-center border transition-all flex flex-col items-center justify-center gap-1 relative ${
+                      isSelected
+                        ? 'bg-cyan-500/15 border-cyan-400 shadow-[0_0_12px_rgba(0,242,254,0.3)]'
+                        : 'bg-[#181a24]/90 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    {isSelected && (
+                      <span className="absolute top-1 left-1 w-3.5 h-3.5 rounded-full bg-cyan-400 text-black flex items-center justify-center text-[9px] font-black">
+                        <Check className="w-2.5 h-2.5" />
+                      </span>
+                    )}
+                    <span className={`text-sm uppercase tracking-wide truncate max-w-full ${eff.cssClass}`}>
+                      {bigTitle ? bigTitle.slice(0, 8) : 'A7MD'}
+                    </span>
+                    <span className="text-[10px] text-slate-300 font-bold truncate max-w-full">
+                      {eff.nameAr}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Password */}

@@ -41,6 +41,9 @@ export interface CardCustomization {
   enableProfanityFilter?: boolean; // default true
   profanityAction?: 'censor' | 'block'; // 'censor' (استبدال بنجوم ****) أو 'block' (منع الإرسال)
   customBlockedWords?: string; // كلمات مخصصة يحددها الستريمر
+
+  // Title 3D & Visual Effects (30 تأثير خرافي للاسم الكبير والتايتل)
+  titleEffect?: string; // e.g. 'tiktokClassic', 'goldLuxury', etc.
 }
 
 export interface UserProfile {

@@ -49,9 +49,11 @@ import {
   Film,
   PlayCircle,
   Zap,
+  Wand2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { playSound, SOUND_PRESETS, SoundTheme } from '@/lib/sounds';
+import { TITLE_EFFECTS, TITLE_EFFECT_CATEGORIES, getTitleEffect } from '@/lib/titleEffects';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -105,7 +107,10 @@ export default function DashboardPage() {
     enableProfanityFilter: true,
     profanityAction: 'censor',
     customBlockedWords: '',
+    titleEffect: 'tiktokClassic',
   });
+
+  const [titleEffectCategory, setTitleEffectCategory] = useState<string>('all');
 
   // Profile Form state
   const [formData, setFormData] = useState({
@@ -154,29 +159,12 @@ export default function DashboardPage() {
 
       // Load card customization
       const userCardCfg: CardCustomization = userData.data.cardCustomization || {};
-      setCardConfig({
-        messageFontSize: userCardCfg.messageFontSize ?? 26,
-        nameFontSize: userCardCfg.nameFontSize ?? 15,
-        footerFontSize: userCardCfg.footerFontSize ?? 12,
-        avatarSize: userCardCfg.avatarSize ?? 28,
-        showAvatar: userCardCfg.showAvatar !== false,
-        showName: userCardCfg.showName !== false,
-        cardHeaderName: userCardCfg.cardHeaderName || userData.data.displayName || '',
-        textAlign: userCardCfg.textAlign || 'right',
-        badgeText: userCardCfg.badgeText || 'رسالة مجهولة 💌',
-        bgType: userCardCfg.bgType || 'transparent',
-        bgColor: userCardCfg.bgColor || '#0f1117',
-        bgOpacity: userCardCfg.bgOpacity ?? 0,
-        messageColor: userCardCfg.messageColor || '#ffffff',
-        nameColor: userCardCfg.nameColor || '#ffffff',
-        footerColor: userCardCfg.footerColor || '#67e8f9',
-        borderTheme: userCardCfg.borderTheme || 'tiktok',
-        showDividers: userCardCfg.showDividers !== false,
-        dividerColor: userCardCfg.dividerColor || '#000000',
-        dividerThickness: userCardCfg.dividerThickness ?? 2,
-        dividerOpacity: userCardCfg.dividerOpacity ?? 85,
-        blurAmount: userCardCfg.blurAmount ?? 0,
-      });
+      setCardConfig((prev) => ({
+        ...prev,
+        ...userCardCfg,
+        cardHeaderName: userCardCfg.cardHeaderName || userData.data.displayName || prev.cardHeaderName,
+        titleEffect: userCardCfg.titleEffect || 'tiktokClassic',
+      }));
 
       setFormData({
         displayName: userData.data.displayName || '',
@@ -1579,6 +1567,95 @@ export default function DashboardPage() {
                 )}
               </div>
 
+              {/* SECTION: 30 EXCLUSIVE TITLE & NAME EFFECTS (30 تأثيراً خرافياً للاسم والتايتل) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
+                <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-black text-white flex items-center gap-2">
+                      <Wand2 className="w-4 h-4 text-cyan-400" />
+                      <span>تأثيرات الاسم والتايتل الخرافية (30 تأثيراً احترافياً):</span>
+                    </span>
+                    <p className="text-xs text-slate-400">
+                      اختر التأثير البصري المفضل لاسمك على كارت اللايف (يظهر فوراً في شاشة المعاينة بالأعلى وعلى الـ Overlay!)
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">التأثير الحالي:</span>
+                    <span className="px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-black">
+                      {getTitleEffect(cardConfig.titleEffect).nameAr}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Category Filter Tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  {TITLE_EFFECT_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setTitleEffectCategory(cat.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        titleEffectCategory === cat.id
+                          ? 'bg-gradient-to-r from-cyan-500 to-pink-500 text-white shadow-lg shadow-cyan-950/50'
+                          : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+                      }`}
+                    >
+                      {cat.nameAr}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 30 Effects Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {TITLE_EFFECTS.filter(
+                    (eff) => titleEffectCategory === 'all' || eff.category === titleEffectCategory
+                  ).map((eff) => {
+                    const isSelected = (cardConfig.titleEffect || 'tiktokClassic') === eff.id;
+                    const previewText =
+                      cardConfig.cardHeaderName || currentUser?.displayName || 'A7MD';
+
+                    return (
+                      <button
+                        key={eff.id}
+                        type="button"
+                        onClick={() => setCardConfig({ ...cardConfig, titleEffect: eff.id })}
+                        className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-between gap-2 relative group min-h-[105px] ${
+                          isSelected
+                            ? 'bg-cyan-500/15 border-cyan-400 ring-2 ring-cyan-400/40 shadow-[0_0_20px_rgba(0,242,254,0.3)] scale-[1.02]'
+                            : 'bg-[#181a24]/90 border-slate-800 hover:border-slate-700 hover:bg-[#1b1f2e]'
+                        }`}
+                      >
+                        {isSelected && (
+                          <span className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-cyan-400 text-black flex items-center justify-center text-[10px] font-black shadow-md">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </span>
+                        )}
+
+                        {/* Live Styled Text Sample */}
+                        <div className="w-full py-1 flex items-center justify-center overflow-hidden">
+                          <span
+                            className={`text-lg uppercase tracking-wide truncate max-w-full ${eff.cssClass}`}
+                          >
+                            {previewText}
+                          </span>
+                        </div>
+
+                        {/* Title and Category Info */}
+                        <div className="w-full space-y-0.5 border-t border-slate-800/80 pt-1.5">
+                          <p className="text-[11px] font-black text-white truncate max-w-full">
+                            {eff.nameAr}
+                          </p>
+                          <p className="text-[9px] text-slate-400 truncate max-w-full font-mono">
+                            {eff.categoryAr}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* SECTION 3: TEXT COLORS (ألوان النصوص) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {/* 1. Message Text Color */}
@@ -2137,8 +2214,14 @@ export default function DashboardPage() {
                   className="w-full bg-[#181a22] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-400 font-bold"
                 />
                 <div className="p-3 rounded-xl bg-black/60 border border-slate-800/80 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">معاينة التأثير:</span>
-                  <span className="text-2xl tiktok-glitch uppercase tracking-wide">
+                  <span className="text-[11px] text-slate-400">
+                    تأثير ({getTitleEffect(cardConfig.titleEffect).nameAr}):
+                  </span>
+                  <span
+                    className={`text-2xl uppercase tracking-wide ${
+                      getTitleEffect(cardConfig.titleEffect).cssClass
+                    }`}
+                  >
                     {formData.bigTitle || 'Live Stream'}
                   </span>
                 </div>

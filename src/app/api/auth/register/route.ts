@@ -6,7 +6,7 @@ import { hashPassword, sanitizeUsername, sanitizeText, toSafeUser } from '@/lib/
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, displayName, password, email, bigTitle, subtitle, topicTitle, topicNotice, avatarUrl } = body;
+    const { username, displayName, password, email, bigTitle, subtitle, topicTitle, topicNotice, avatarUrl, titleEffect } = body;
 
     if (!username || !username.trim()) {
       return NextResponse.json({ success: false, error: 'اسم المستخدم مطلوب' }, { status: 400 });
@@ -53,6 +53,9 @@ export async function POST(request: NextRequest) {
       topicNotice: sanitizeText(topicNotice?.trim() || 'أي رسالة برا الموضوع ده، مش هتظهر في اللايف 👀', 200),
       isLive: true,
       liveBadgeText: '• LIVE',
+      cardCustomization: {
+        titleEffect: titleEffect || 'tiktokClassic',
+      },
       createdAt: Date.now(),
     };
 

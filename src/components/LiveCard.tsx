@@ -3,6 +3,7 @@
 import React from 'react';
 import { AnonymousMessage, UserProfile, CardCustomization } from '@/lib/types';
 import { MessageSquare } from 'lucide-react';
+import { getTitleEffect } from '@/lib/titleEffects';
 
 interface LiveCardProps {
   user: Partial<UserProfile>;
@@ -57,12 +58,14 @@ export default function LiveCard({
     dividerThickness: 2,
     dividerOpacity: 85,
     blurAmount: 0,
+    titleEffect: 'tiktokClassic',
     ...user.cardCustomization,
     ...customization,
   };
 
   const displayName =
     cardConfig.cardHeaderName?.trim() || user.bigTitle || user.displayName || 'Live Stream';
+  const effectObj = getTitleEffect(cardConfig.titleEffect || 'tiktokClassic');
 
   // Determine border gradient and glow variables
   let borderGradient = 'linear-gradient(135deg, #00f2fe 0%, #d946ef 50%, #fe2c55 100%)';
@@ -236,10 +239,11 @@ export default function LiveCard({
             <span
               style={{
                 fontSize: `${cardConfig.nameFontSize || 15}px`,
-                color: cardConfig.nameColor || '#ffffff',
-                textShadow: '0 2px 8px rgba(0,0,0,0.95)',
+                ...(cardConfig.nameColor && cardConfig.nameColor !== '#ffffff'
+                  ? { color: cardConfig.nameColor }
+                  : {}),
               }}
-              className="font-extrabold tracking-wide transition-all"
+              className={`font-black tracking-wide transition-all uppercase ${effectObj.cssClass}`}
             >
               {displayName}
             </span>
