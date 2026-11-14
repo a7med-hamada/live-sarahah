@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
 import { UserProfile } from '@/lib/types';
-import { hashPassword, sanitizeUsername, sanitizeText, toSafeUser, generateSessionToken } from '@/lib/security';
+import { hashPassword, verifyPassword, sanitizeUsername, sanitizeText, toSafeUser, generateSessionToken } from '@/lib/security';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,8 +29,30 @@ export async function POST(request: NextRequest) {
 
     const existing = Storage.getUserByUsername(cleanUsername);
     if (existing) {
+      // If user exists and entered their matching password, log them in seamlessly!
+      if (existing.password && verifyPassword(password, existing.password)) {
+        const sessionToken = generateSessionToken();
+        const sessionExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+        Storage.updateUserProfile(cleanUsername, { sessionToken, sessionExpiresAt });
+
+        const response = NextResponse.json(
+          { success: true, token: sessionToken, data: toSafeUser(existing), message: 'تم تسجيل الدخول إلى حسابك بنجاح' },
+          { status: 200 }
+        );
+
+        response.cookies.set('session_token', sessionToken, {
+          path: '/',
+          maxAge: 30 * 24 * 60 * 60,
+          httpOnly: false,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+        });
+
+        return response;
+      }
+
       return NextResponse.json(
-        { success: false, error: 'اسم المستخدم مأخوذ بالفعل، اختر اسماً آخر' },
+        { success: false, error: 'اسم المستخدم مسجل بالفعل. يرجى تسجيل الدخول بكلمة مرورك أو اختيار اسم مستخدم آخر.' },
         { status: 400 }
       );
     }

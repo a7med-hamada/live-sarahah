@@ -1,4 +1,59 @@
 {
-  "users": {},
+  "users": {
+    "ahmed": {
+      "id": "usr_ahmed_master",
+      "username": "ahmed",
+      "displayName": "A7MD",
+      "bigTitle": "A7MD Live",
+      "password": "pbkdf2$c8531642c5cd1a16a0f6997b9290a63f$418954eb062a57f06eb8c2e9b47d62e375d501f8845bb120a45dd44b984b9b4a12374e7efdaa47e3ee1fd822eab877e9cd6d9af11968e36e0ec87637396bed45",
+      "email": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "subtitle": "ابعتلي أي حاجة في دماغك من غير اسم. سؤال، رأي، اعتراف... محدش هيعرف إنت مين.",
+      "topicTitle": "مشاكل عاطفية",
+      "topicNotice": "أي رسالة برا الموضوع ده، مش هتظهر في اللايف 👀",
+      "isLive": true,
+      "liveBadgeText": "• LIVE",
+      "cardCustomization": {
+        "titleEffect": "tiktokClassic",
+        "borderTheme": "tiktok",
+        "blurAmount": 0,
+        "showDividers": true,
+        "enableSoundAlert": true,
+        "soundTheme": "tiktokDing",
+        "soundVolume": 80,
+        "animationType": "slideUp",
+        "enableProfanityFilter": true,
+        "profanityAction": "censor"
+      },
+      "createdAt": 1700000000000
+    },
+    "ahmedd": {
+      "id": "usr_ahmedd_master",
+      "username": "ahmedd",
+      "displayName": "A7MD",
+      "bigTitle": "A7MD Live",
+      "password": "pbkdf2$c8531642c5cd1a16a0f6997b9290a63f$418954eb062a57f06eb8c2e9b47d62e375d501f8845bb120a45dd44b984b9b4a12374e7efdaa47e3ee1fd822eab877e9cd6d9af11968e36e0ec87637396bed45",
+      "email": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "subtitle": "ابعتلي أي حاجة في دماغك من غير اسم. سؤال، رأي، اعتراف... محدش هيعرف إنت مين.",
+      "topicTitle": "مشاكل عاطفية",
+      "topicNotice": "أي رسالة برا الموضوع ده، مش هتظهر في اللايف 👀",
+      "isLive": true,
+      "liveBadgeText": "• LIVE",
+      "cardCustomization": {
+        "titleEffect": "tiktokClassic",
+        "borderTheme": "tiktok",
+        "blurAmount": 0,
+        "showDividers": true,
+        "enableSoundAlert": true,
+        "soundTheme": "tiktokDing",
+        "soundVolume": 80,
+        "animationType": "slideUp",
+        "enableProfanityFilter": true,
+        "profanityAction": "censor"
+      },
+      "createdAt": 1700000000000
+    }
+  },
   "messages": []
 }

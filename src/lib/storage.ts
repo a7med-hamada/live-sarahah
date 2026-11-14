@@ -68,52 +68,57 @@ function initDb(): DatabaseSchema {
 
   const { runtimePath, seedPath } = resolveDbPath();
 
-  // 2. Try loading from runtimePath (e.g. /tmp/live_database.json)
-  if (fs.existsSync(runtimePath)) {
-    try {
-      const raw = fs.readFileSync(runtimePath, 'utf-8');
-      const parsed = JSON.parse(raw);
-      if (!parsed.users) parsed.users = {};
-      if (!parsed.messages) parsed.messages = [];
-      globalThis.__LIVE_DB_CACHE__ = parsed;
-      return parsed;
-    } catch (e) {
-      console.warn('Error reading runtime DB, will try seed:', e);
-    }
-  }
-
-  // 3. Fallback to bundled seed database if available
-  let initialData: DatabaseSchema = { users: {}, messages: [] };
+  // 2. Load bundled seed database (source of truth for permanent accounts)
+  let seedData: DatabaseSchema = { users: {}, messages: [] };
   if (fs.existsSync(seedPath)) {
     try {
       const raw = fs.readFileSync(seedPath, 'utf-8');
-      initialData = JSON.parse(raw);
-      if (!initialData.users) initialData.users = {};
-      if (!initialData.messages) initialData.messages = [];
+      seedData = JSON.parse(raw);
+      if (!seedData.users) seedData.users = {};
+      if (!seedData.messages) seedData.messages = [];
     } catch (e) {
       console.warn('Error reading seed DB:', e);
     }
   }
 
-  // 4. Save to runtimePath for subsequent writes
+  let finalData: DatabaseSchema = { users: { ...seedData.users }, messages: [...seedData.messages] };
+
+  // 3. Try loading from runtimePath (e.g. /tmp/live_database.json) and merge
+  if (fs.existsSync(runtimePath)) {
+    try {
+      const raw = fs.readFileSync(runtimePath, 'utf-8');
+      const runtimeParsed = JSON.parse(raw);
+      if (runtimeParsed && runtimeParsed.users) {
+        // Merge runtime users with seed users (seed users take precedence if not present)
+        finalData.users = { ...seedData.users, ...runtimeParsed.users };
+      }
+      if (runtimeParsed && Array.isArray(runtimeParsed.messages)) {
+        finalData.messages = runtimeParsed.messages;
+      }
+    } catch (e) {
+      console.warn('Error reading runtime DB, using seed:', e);
+    }
+  }
+
+  // 4. Save merged DB to runtimePath for subsequent writes
   try {
     const dir = path.dirname(runtimePath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(runtimePath, JSON.stringify(initialData, null, 2), 'utf-8');
+    fs.writeFileSync(runtimePath, JSON.stringify(finalData, null, 2), 'utf-8');
   } catch (err) {
-    console.warn('Failed to write initial DB to disk (continuing in-memory):', err);
+    console.warn('Failed to write DB to disk (continuing in-memory):', err);
   }
 
-  globalThis.__LIVE_DB_CACHE__ = initialData;
+  globalThis.__LIVE_DB_CACHE__ = finalData;
 
   // 5. Trigger cloud sync in background if cloud storage is configured
   if (getUpstashConfig()) {
     Storage.syncFromCloud().catch(() => {});
   }
 
-  return initialData;
+  return finalData;
 }
 
 function saveDb(data: DatabaseSchema): void {
