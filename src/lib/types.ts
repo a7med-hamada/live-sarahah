@@ -1,6 +1,6 @@
 export interface CardCustomization {
-  messageFontSize?: number; // 14 to 40 px (default 20)
-  nameFontSize?: number; // 11 to 26 px (default 14)
+  messageFontSize?: number; // 14 to 40 px (default 24)
+  nameFontSize?: number; // 11 to 26 px (default 15)
   footerFontSize?: number; // 10 to 18 px (default 12)
   avatarSize?: number; // 18 to 50 px (default 28)
   showAvatar?: boolean; // default true
@@ -8,6 +8,15 @@ export interface CardCustomization {
   cardHeaderName?: string; // custom name in card
   textAlign?: 'right' | 'center' | 'left'; // default 'right'
   badgeText?: string; // default "رسالة مجهولة 💌"
+
+  // Colors & Transparency
+  bgType?: 'solid' | 'transparent' | 'glass'; // default 'solid'
+  bgColor?: string; // hex color e.g. '#0f1117'
+  bgOpacity?: number; // 0 to 100 (%) default 95
+  messageColor?: string; // hex color e.g. '#ffffff'
+  nameColor?: string; // hex color e.g. '#ffffff'
+  footerColor?: string; // hex color e.g. '#67e8f9'
+  borderTheme?: 'tiktok' | 'cyan' | 'purple' | 'gold' | 'neonGreen' | 'transparent'; // default 'tiktok'
 }
 
 export interface UserProfile {

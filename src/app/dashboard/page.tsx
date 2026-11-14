@@ -36,7 +36,10 @@ import {
   AlignCenter,
   AlignLeft,
   Image as ImageIcon,
-  Save
+  Save,
+  Palette,
+  EyeOff,
+  SunMedium
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -68,6 +71,13 @@ export default function DashboardPage() {
     cardHeaderName: '',
     textAlign: 'right',
     badgeText: 'رسالة مجهولة 💌',
+    bgType: 'solid',
+    bgColor: '#0f1117',
+    bgOpacity: 95,
+    messageColor: '#ffffff',
+    nameColor: '#ffffff',
+    footerColor: '#67e8f9',
+    borderTheme: 'tiktok',
   });
 
   // Profile Form state
@@ -127,6 +137,13 @@ export default function DashboardPage() {
         cardHeaderName: userCardCfg.cardHeaderName || userData.data.displayName || '',
         textAlign: userCardCfg.textAlign || 'right',
         badgeText: userCardCfg.badgeText || 'رسالة مجهولة 💌',
+        bgType: userCardCfg.bgType || 'solid',
+        bgColor: userCardCfg.bgColor || '#0f1117',
+        bgOpacity: userCardCfg.bgOpacity ?? 95,
+        messageColor: userCardCfg.messageColor || '#ffffff',
+        nameColor: userCardCfg.nameColor || '#ffffff',
+        footerColor: userCardCfg.footerColor || '#67e8f9',
+        borderTheme: userCardCfg.borderTheme || 'tiktok',
       });
 
       setFormData({
@@ -193,7 +210,6 @@ export default function DashboardPage() {
     setTimeout(() => setCopiedObs(false), 2000);
   };
 
-  // Lock message firmly on stream
   const handleSetOverlayMsg = async (msgId: string | null) => {
     if (!currentUser) return;
     setActiveOverlayMsgId(msgId);
@@ -210,7 +226,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Save Card Customizations (Font sizes, avatar size, name)
   const handleSaveCardCustomization = async () => {
     if (!currentUser) return;
     setSavingCardConfig(true);
@@ -487,10 +502,10 @@ export default function DashboardPage() {
                   <span>ربط الكارت مع TikTok Live Studio أو OBS Studio</span>
                 </div>
                 <h3 className="text-lg font-black text-white">
-                  التحكم المباشر في أحجام ونصوص كارت اللايف
+                  التحكم المباشر في أحجام الكارت، الشفافية، وألوان النصوص
                 </h3>
                 <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                  يمكنك تعديل حجم كل نص بشكل مستقل، وتغيير حجم ومظهر صورة البروفايل، وتعديل اسمك المعروض في الكارت مع معاينة فورية ومباشرة!
+                  يمكنك جعل خلفية الكارت شفافة تماماً 100% ليظهر فوق كاميرتك مباشرة، وتعديل لون كل نص وإطار النيون بنقرة زر واحدة!
                 </p>
               </div>
 
@@ -727,16 +742,16 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* DEDICATED VISUAL SIZES & TEXT CUSTOMIZATION PANEL (لوحة التحكم في أحجام الكارت والنصوص) */}
+            {/* DEDICATED VISUAL SIZES, COLORS & TRANSPARENCY CUSTOMIZATION PANEL */}
             <div className="p-6 sm:p-7 rounded-3xl bg-[#0f1118] border border-cyan-500/30 shadow-2xl space-y-6">
               <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-3">
                 <div className="space-y-1">
                   <h3 className="text-lg font-black text-white flex items-center gap-2">
                     <Sliders className="w-5 h-5 text-cyan-400" />
-                    <span>لوحة التحكم في مقاسات ونصوص الكارت (تحديث مباشر على الشاشة)</span>
+                    <span>تخصيص ألوان الكارت، الشفافية، والمقاسات (مباشر على الشاشة)</span>
                   </h3>
                   <p className="text-xs text-slate-400">
-                    عدل حجم كل نص وحجم صورة البروفايل ومحاذاة الرسالة بالمللي، وشاهد التغيير فوراً في الكارت بالأعلى!
+                    تحكم بالكامل في شفافية الخلفية (Transparent)، ألوان نصوص الرسالة، ومقاسات كل عنصر بالمللي!
                   </p>
                 </div>
 
@@ -750,7 +765,7 @@ export default function DashboardPage() {
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      <span>حفظ المقاسات للايف والـ OBS</span>
+                      <span>حفظ الإعدادات للايف والـ OBS</span>
                     </>
                   )}
                 </button>
@@ -758,11 +773,296 @@ export default function DashboardPage() {
 
               {cardSaveSuccess && (
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs text-center font-bold animate-in fade-in">
-                  ✓ تم حفظ مقاسات ونصوص الكارت بنجاح وتم تحديث رابط الـ OBS تلقائياً!
+                  ✓ تم حفظ إعدادات وألوان وشفافية الكارت بنجاح وتم تحديث رابط الـ OBS تلقائياً!
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* SECTION A: BACKGROUND COLOR & TRANSPARENCY (الخلفية والشفافية) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-white flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-cyan-400" />
+                    <span>لون خلفية الكارت ودرجة الشفافية (Transparency):</span>
+                  </span>
+                  <span className="text-xs font-mono font-bold text-cyan-300">
+                    {cardConfig.bgType === 'transparent' || cardConfig.bgOpacity === 0
+                      ? 'شفاف تماماً 100%'
+                      : `شفافية: ${cardConfig.bgOpacity}%`}
+                  </span>
+                </div>
+
+                {/* Quick Presets for Background Transparency */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <button
+                    onClick={() =>
+                      setCardConfig({ ...cardConfig, bgType: 'transparent', bgOpacity: 0 })
+                    }
+                    className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      cardConfig.bgType === 'transparent' || cardConfig.bgOpacity === 0
+                        ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-950/50'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <EyeOff className="w-4 h-4 text-cyan-300" />
+                    <span>خلفية شفافة تماماً (100% Transparent)</span>
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setCardConfig({ ...cardConfig, bgType: 'glass', bgOpacity: 35, bgColor: '#0f1117' })
+                    }
+                    className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      cardConfig.bgType === 'glass' && cardConfig.bgOpacity === 35
+                        ? 'bg-cyan-500 text-black border-cyan-400 shadow-md'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-purple-300" />
+                    <span>زجاجي شفاف شبه داكن (Glass 35%)</span>
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setCardConfig({ ...cardConfig, bgType: 'solid', bgOpacity: 95, bgColor: '#0f1117' })
+                    }
+                    className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      cardConfig.bgType === 'solid' && (cardConfig.bgOpacity ?? 95) > 80
+                        ? 'bg-purple-600 text-white border-purple-400 shadow-md'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <SunMedium className="w-4 h-4 text-amber-300" />
+                    <span>خلفية داكنة معتمة (Dark Solid 95%)</span>
+                  </button>
+                </div>
+
+                {/* Opacity Slider */}
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-300 font-bold">شريط تعديل الشفافية الدقيقة (0% إلى 100%):</span>
+                    <span className="font-mono text-cyan-300 font-bold">{cardConfig.bgOpacity ?? 95}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={cardConfig.bgOpacity ?? 95}
+                    onChange={(e) =>
+                      setCardConfig({
+                        ...cardConfig,
+                        bgOpacity: Number(e.target.value),
+                        bgType: Number(e.target.value) === 0 ? 'transparent' : 'solid',
+                      })
+                    }
+                    className="w-full accent-cyan-400 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 font-bold">
+                    <span>0% (شفاف خالص لا يظهر سوى الكلام والإطار)</span>
+                    <span>50% (شبه شفاف)</span>
+                    <span>100% (معتم تماماً)</span>
+                  </div>
+                </div>
+
+                {/* Background Base Color Picker */}
+                <div className="flex items-center gap-3 pt-2">
+                  <span className="text-xs font-bold text-slate-300">لون الخلفية الأساسي:</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={cardConfig.bgColor || '#0f1117'}
+                      onChange={(e) => setCardConfig({ ...cardConfig, bgColor: e.target.value })}
+                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                    />
+                    <span className="text-xs font-mono text-slate-400">{cardConfig.bgColor || '#0f1117'}</span>
+                  </div>
+
+                  {/* Preset color circles */}
+                  <div className="flex items-center gap-1.5 mr-auto">
+                    {[
+                      { name: 'أسود فحمي', color: '#0f1117' },
+                      { name: 'أزرق ليلي', color: '#0a101f' },
+                      { name: 'بنفسجي داكن', color: '#160a22' },
+                      { name: 'رمادي داكن', color: '#1c1f26' },
+                    ].map((c) => (
+                      <button
+                        key={c.color}
+                        onClick={() => setCardConfig({ ...cardConfig, bgColor: c.color })}
+                        title={c.name}
+                        style={{ backgroundColor: c.color }}
+                        className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
+                          cardConfig.bgColor === c.color ? 'border-cyan-400 scale-110' : 'border-slate-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION B: TEXT COLORS (ألوان نصوص الرسالة والاسم والفوتر) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* 1. Message Text Color */}
+                <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Type className="w-4 h-4 text-cyan-400" />
+                    <span>لون نص الرسالة الأساسي:</span>
+                  </span>
+
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="color"
+                      value={cardConfig.messageColor || '#ffffff'}
+                      onChange={(e) => setCardConfig({ ...cardConfig, messageColor: e.target.value })}
+                      className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border-0"
+                    />
+                    <span className="text-xs font-mono font-bold text-white">
+                      {cardConfig.messageColor || '#ffffff'}
+                    </span>
+                  </div>
+
+                  {/* Palette Swatches */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {[
+                      { color: '#ffffff', name: 'أبيض ناصع' },
+                      { color: '#facc15', name: 'أصفر نيون' },
+                      { color: '#4ade80', name: 'أخضر فسفوري' },
+                      { color: '#38bdf8', name: 'سماوي نيون' },
+                      { color: '#f472b6', name: 'وردي فاقع' },
+                      { color: '#fb923c', name: 'برتقالي' },
+                    ].map((swatch) => (
+                      <button
+                        key={swatch.color}
+                        onClick={() => setCardConfig({ ...cardConfig, messageColor: swatch.color })}
+                        title={swatch.name}
+                        style={{ backgroundColor: swatch.color }}
+                        className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
+                          cardConfig.messageColor === swatch.color ? 'border-cyan-400 ring-2 ring-cyan-400/50 scale-110' : 'border-slate-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Streamer Name Color */}
+                <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-rose-400" />
+                    <span>لون اسمك في الكارت:</span>
+                  </span>
+
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="color"
+                      value={cardConfig.nameColor || '#ffffff'}
+                      onChange={(e) => setCardConfig({ ...cardConfig, nameColor: e.target.value })}
+                      className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border-0"
+                    />
+                    <span className="text-xs font-mono font-bold text-white">
+                      {cardConfig.nameColor || '#ffffff'}
+                    </span>
+                  </div>
+
+                  {/* Swatches */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {[
+                      { color: '#ffffff', name: 'أبيض' },
+                      { color: '#00f2fe', name: 'سماوي تيك توك' },
+                      { color: '#fe2c55', name: 'أحمر تيك توك' },
+                      { color: '#c084fc', name: 'بنفسجي' },
+                      { color: '#facc15', name: 'ذهبي' },
+                    ].map((swatch) => (
+                      <button
+                        key={swatch.color}
+                        onClick={() => setCardConfig({ ...cardConfig, nameColor: swatch.color })}
+                        title={swatch.name}
+                        style={{ backgroundColor: swatch.color }}
+                        className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
+                          cardConfig.nameColor === swatch.color ? 'border-rose-400 ring-2 ring-rose-400/50 scale-110' : 'border-slate-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Footer Color */}
+                <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-cyan-300" />
+                    <span>لون نص الفوتر (اللينك في البايو):</span>
+                  </span>
+
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="color"
+                      value={cardConfig.footerColor || '#67e8f9'}
+                      onChange={(e) => setCardConfig({ ...cardConfig, footerColor: e.target.value })}
+                      className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border-0"
+                    />
+                    <span className="text-xs font-mono font-bold text-white">
+                      {cardConfig.footerColor || '#67e8f9'}
+                    </span>
+                  </div>
+
+                  {/* Swatches */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {[
+                      { color: '#67e8f9', name: 'سماوي' },
+                      { color: '#94a3b8', name: 'رمادي هادئ' },
+                      { color: '#f472b6', name: 'وردي' },
+                      { color: '#a3e635', name: 'أخضر ليموني' },
+                      { color: '#fde047', name: 'أصفر' },
+                    ].map((swatch) => (
+                      <button
+                        key={swatch.color}
+                        onClick={() => setCardConfig({ ...cardConfig, footerColor: swatch.color })}
+                        title={swatch.name}
+                        style={{ backgroundColor: swatch.color }}
+                        className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
+                          cardConfig.footerColor === swatch.color ? 'border-cyan-400 ring-2 ring-cyan-400/50 scale-110' : 'border-slate-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION C: NEON BORDER THEME (ثيم إطار النيون للكارت) */}
+              <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <SunMedium className="w-4 h-4 text-amber-400" />
+                  <span>ثيم إطار النيون المتوهج للكارت:</span>
+                </span>
+
+                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                  {[
+                    { id: 'tiktok', name: 'تيك توك نيون', desc: 'سماوي وفوشيا', bg: 'linear-gradient(135deg, #00f2fe, #fe2c55)' },
+                    { id: 'cyan', name: 'سماوي نقي', desc: 'أزرق سماوي', bg: 'linear-gradient(135deg, #00f2fe, #3b82f6)' },
+                    { id: 'purple', name: 'بنفسجي نيون', desc: 'موف ووردي', bg: 'linear-gradient(135deg, #c084fc, #ec4899)' },
+                    { id: 'gold', name: 'ذهبي فخم', desc: 'عسلي ملكي', bg: 'linear-gradient(135deg, #f59e0b, #fbbf24)' },
+                    { id: 'neonGreen', name: 'أخضر فسفوري', desc: 'ليموني وزمردي', bg: 'linear-gradient(135deg, #10b981, #a3e635)' },
+                    { id: 'transparent', name: 'بدون إطار', desc: 'إطار مخفي', bg: '#1f2937' },
+                  ].map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => setCardConfig({ ...cardConfig, borderTheme: theme.id as any })}
+                      className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        cardConfig.borderTheme === theme.id
+                          ? 'border-cyan-400 bg-slate-800/90 shadow-md ring-1 ring-cyan-400'
+                          : 'border-slate-700 bg-slate-900/60 hover:bg-slate-800'
+                      }`}
+                    >
+                      <div
+                        style={{ background: theme.bg }}
+                        className="w-full h-3 rounded-full"
+                      />
+                      <span className="text-xs font-bold text-white">{theme.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* SECTION D: FONT SIZES & ALIGNMENT (المقاسات والمحاذاة) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 border-t border-slate-800">
                 {/* 1. Message Font Size & Alignment */}
                 <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
@@ -771,16 +1071,16 @@ export default function DashboardPage() {
                       <span>حجم خط نص الرسالة:</span>
                     </span>
                     <span className="px-2 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 font-mono text-xs font-bold">
-                      {cardConfig.messageFontSize || 20}px
+                      {cardConfig.messageFontSize || 24}px
                     </span>
                   </div>
 
                   <input
                     type="range"
                     min="14"
-                    max="40"
+                    max="42"
                     step="1"
-                    value={cardConfig.messageFontSize || 20}
+                    value={cardConfig.messageFontSize || 24}
                     onChange={(e) =>
                       setCardConfig({ ...cardConfig, messageFontSize: Number(e.target.value) })
                     }
@@ -790,10 +1090,10 @@ export default function DashboardPage() {
                   {/* Quick Presets */}
                   <div className="flex items-center gap-1.5 pt-1">
                     {[
-                      { label: 'صغير', size: 16 },
-                      { label: 'متوسط', size: 20 },
-                      { label: 'كبير', size: 26 },
-                      { label: 'ضخم جداً', size: 34 },
+                      { label: 'صغير', size: 18 },
+                      { label: 'متوسط', size: 24 },
+                      { label: 'كبير', size: 30 },
+                      { label: 'ضخم جداً', size: 38 },
                     ].map((p) => (
                       <button
                         key={p.label}
@@ -872,23 +1172,21 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Name Text Input */}
                   <input
                     type="text"
                     value={cardConfig.cardHeaderName || ''}
                     onChange={(e) =>
                       setCardConfig({ ...cardConfig, cardHeaderName: e.target.value })
                     }
-                    placeholder="اسمك في الكارت (مثال: A7md)"
+                    placeholder="اسمك في الكارت (مثال: A7MD)"
                     className="w-full bg-[#1b1f2e] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-400 font-bold"
                   />
 
-                  {/* Name Font Size Slider */}
                   <div className="space-y-1 pt-1">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-300">حجم خط الاسم:</span>
                       <span className="font-mono text-rose-300 font-bold">
-                        {cardConfig.nameFontSize || 14}px
+                        {cardConfig.nameFontSize || 15}px
                       </span>
                     </div>
                     <input
@@ -896,7 +1194,7 @@ export default function DashboardPage() {
                       min="11"
                       max="28"
                       step="1"
-                      value={cardConfig.nameFontSize || 14}
+                      value={cardConfig.nameFontSize || 15}
                       onChange={(e) =>
                         setCardConfig({ ...cardConfig, nameFontSize: Number(e.target.value) })
                       }
@@ -904,7 +1202,6 @@ export default function DashboardPage() {
                     />
                   </div>
 
-                  {/* Badge Text */}
                   <div className="pt-2 border-t border-slate-800/80 space-y-1">
                     <span className="text-[11px] font-bold text-slate-300">نص الشارة العلوية:</span>
                     <input
@@ -939,7 +1236,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Avatar Size Slider */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-300">حجم دائرة الصورة:</span>
@@ -960,7 +1256,6 @@ export default function DashboardPage() {
                     />
                   </div>
 
-                  {/* Footer Font Size Slider */}
                   <div className="pt-2 border-t border-slate-800/80 space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-300">حجم خط الفوتر (اللينك في البايو):</span>
@@ -980,19 +1275,19 @@ export default function DashboardPage() {
                       className="w-full accent-cyan-400 cursor-pointer"
                     />
                   </div>
-
-                  {/* Quick Save Indicator */}
-                  <div className="pt-2">
-                    <button
-                      onClick={handleSaveCardCustomization}
-                      disabled={savingCardConfig}
-                      className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>حفظ التعديلات الحالية</span>
-                    </button>
-                  </div>
                 </div>
+              </div>
+
+              {/* Bottom Big Save Button */}
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={handleSaveCardCustomization}
+                  disabled={savingCardConfig}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-purple-500 to-rose-500 hover:opacity-95 text-white font-black text-sm shadow-xl shadow-cyan-950/40 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>حفظ جميع التعديلات والألوان للايف والـ OBS</span>
+                </button>
               </div>
             </div>
           </div>

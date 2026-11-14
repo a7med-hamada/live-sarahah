@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const users = Storage.getAllUsers().map(({ password, ...u }) => u);
