@@ -11,21 +11,23 @@ export interface CardCustomization {
 
   // Colors & Transparency
   bgType?: 'solid' | 'transparent' | 'glass'; // default 'transparent'
-  bgColor?: string; // hex color e.g. '#0f1117'
-  bgOpacity?: number; // 0 to 100 (%) default 0
+  bgColor?: string; // hex color e.g. '#000000', '#0f1117'
+  bgOpacity?: number; // 0 to 100 (%) default 0 (0 = 100% شفاف)
   messageColor?: string; // hex color e.g. '#ffffff'
   nameColor?: string; // hex color e.g. '#ffffff'
   footerColor?: string; // hex color e.g. '#67e8f9'
-  borderTheme?: 'tiktok' | 'cyan' | 'purple' | 'gold' | 'neonGreen' | 'transparent'; // default 'tiktok'
+  borderTheme?: 'tiktok' | 'cyan' | 'purple' | 'gold' | 'neonGreen' | 'red' | 'white' | 'custom' | 'transparent'; // default 'tiktok'
+  customBorderColor?: string; // custom hex e.g. '#00f2fe'
+  borderWidth?: number; // 1 to 6 px (default 3.5)
 
   // Divider Lines (الخطين الفاصلين الأسودين)
   showDividers?: boolean; // default true
   dividerColor?: string; // default '#000000'
   dividerThickness?: number; // 1 to 6 px (default 2)
-  dividerOpacity?: number; // 10 to 100 (%) default 80
+  dividerOpacity?: number; // 10 to 100 (%) default 85
 
   // Pure Transparent Blur (درجة البلور الضبابي الشفاف)
-  blurAmount?: number; // 0 to 30 px (default 0)
+  blurAmount?: number; // 0 to 35 px (default 0)
 }
 
 export interface UserProfile {

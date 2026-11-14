@@ -63,6 +63,8 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'pinned'>('all');
   const [showGuideModal, setShowGuideModal] = useState(false);
 
+  const [previewBg, setPreviewBg] = useState<'camera' | 'game' | 'grid'>('camera');
+
   // Card Customization state (live adjustable controls)
   const [cardConfig, setCardConfig] = useState<CardCustomization>({
     messageFontSize: 26,
@@ -75,12 +77,14 @@ export default function DashboardPage() {
     textAlign: 'right',
     badgeText: 'رسالة مجهولة 💌',
     bgType: 'transparent',
-    bgColor: '#0f1117',
+    bgColor: '#000000',
     bgOpacity: 0,
     messageColor: '#ffffff',
     nameColor: '#ffffff',
     footerColor: '#67e8f9',
     borderTheme: 'tiktok',
+    customBorderColor: '#00f2fe',
+    borderWidth: 3.5,
     showDividers: true,
     dividerColor: '#000000',
     dividerThickness: 2,
@@ -652,10 +656,40 @@ export default function DashboardPage() {
 
             {/* Live Stream Viewport Mockup */}
             <div className="relative rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl bg-slate-950 aspect-[9/16] sm:aspect-[16/10] max-w-3xl mx-auto flex flex-col justify-between p-4 sm:p-6">
-              {/* Simulated TikTok Live Header */}
-              <div className="flex items-center justify-between text-xs text-white z-10">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10">
-                  <div className="w-7 h-7 rounded-full overflow-hidden border border-cyan-400">
+              {/* 1. Simulated Backdrop Image / Video (Placed FIRST in DOM for correct backdrop-filter capture) */}
+              <div className="absolute inset-0 z-0 overflow-hidden">
+                {previewBg === 'camera' && (
+                  <img
+                    src="https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1200&q=80"
+                    alt="Streamer Camera Simulation"
+                    className="w-full h-full object-cover opacity-85 filter brightness-95 contrast-110"
+                  />
+                )}
+                {previewBg === 'game' && (
+                  <img
+                    src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80"
+                    alt="Gaming Live Stream Simulation"
+                    className="w-full h-full object-cover opacity-90 filter contrast-125 saturate-125"
+                  />
+                )}
+                {previewBg === 'grid' && (
+                  <div
+                    className="w-full h-full bg-[#07080a]"
+                    style={{
+                      backgroundImage:
+                        'linear-gradient(45deg, #161a26 25%, transparent 25%), linear-gradient(-45deg, #161a26 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #161a26 75%), linear-gradient(-45deg, transparent 75%, #161a26 75%)',
+                      backgroundSize: '24px 24px',
+                      backgroundPosition: '0 0, 0 12px, 12px -12px, -12px 0px',
+                    }}
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60"></div>
+              </div>
+
+              {/* 2. Top Header Controls & Background Switcher */}
+              <div className="relative z-10 flex items-center justify-between text-xs text-white pb-2">
+                <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                  <div className="w-6 h-6 rounded-full overflow-hidden border border-rose-500">
                     <img
                       src={currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                       alt=""
@@ -671,13 +705,43 @@ export default function DashboardPage() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-slate-300">
-                  <span>👥 975 مشاهد</span>
+                {/* Live Background Switcher for testing Blur */}
+                <div className="flex items-center gap-1 bg-black/75 backdrop-blur-md p-1 rounded-full border border-white/15 text-[11px] font-bold">
+                  <button
+                    onClick={() => setPreviewBg('camera')}
+                    className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                      previewBg === 'camera'
+                        ? 'bg-rose-500 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    📷 كاميرا لايف
+                  </button>
+                  <button
+                    onClick={() => setPreviewBg('game')}
+                    className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                      previewBg === 'game'
+                        ? 'bg-purple-500 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🎮 لعبة نيون
+                  </button>
+                  <button
+                    onClick={() => setPreviewBg('grid')}
+                    className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                      previewBg === 'grid'
+                        ? 'bg-cyan-500 text-black shadow-sm font-black'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🏁 شطرنج OBS
+                  </button>
                 </div>
               </div>
 
-              {/* The Live Floating Card with Customizations */}
-              <div className="my-auto z-10 w-full flex justify-center py-4">
+              {/* 3. The Live Floating Card with Customizations */}
+              <div className="my-auto relative z-10 w-full flex justify-center py-4">
                 <LiveCard
                   user={currentUser || { displayName: 'Streamer', bigTitle: 'Live Stream' }}
                   message={activeMsg}
@@ -685,26 +749,16 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* Simulated Streamer / Video Camera Backdrop */}
-              <div className="absolute inset-0 z-0">
-                <img
-                  src="https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1200&q=80"
-                  alt="Streamer Camera Simulation"
-                  className="w-full h-full object-cover opacity-35 filter brightness-75 contrast-125"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/70"></div>
-              </div>
-
-              {/* Simulated TikTok Live Bottom Chat */}
-              <div className="z-10 flex items-center justify-between text-xs text-white pt-2">
+              {/* 4. Simulated TikTok Live Bottom Chat */}
+              <div className="relative z-10 flex items-center justify-between text-xs text-white pt-2">
                 <div className="space-y-1">
-                  <div className="px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm text-slate-300 text-[11px] inline-block">
-                    💬 <span className="text-cyan-400 font-bold">متابع:</span> 😂😂😂😂
+                  <div className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-slate-300 text-[11px] inline-block border border-white/10">
+                    💬 <span className="text-cyan-400 font-bold">متابع:</span> عاش يا بطل أحلى لايف 🔥
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-rose-500 text-lg">❤️</span>
-                  <span className="text-rose-500 text-lg">❤️</span>
+                  <span className="text-rose-500 text-lg animate-pulse">❤️</span>
+                  <span className="text-rose-500 text-lg animate-bounce">❤️</span>
                 </div>
               </div>
             </div>
@@ -790,7 +844,304 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* NEW SECTION 1: DIVIDER LINES CONTROLS (التحكم في الخطين الفاصلين الأسودين) */}
+              {/* SECTION 1: BORDER THEMES & COLORS (ألوان وثيمات إطار النيون) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <span className="text-sm font-black text-white flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-cyan-400" />
+                    <span>ألوان وثيمات إطار النيون:</span>
+                  </span>
+                  <span className="text-xs font-mono font-bold text-cyan-300">
+                    {cardConfig.borderTheme === 'tiktok'
+                      ? 'تيك توك كلاسيكي (سماوي وفوشيا)'
+                      : cardConfig.borderTheme === 'cyan'
+                      ? 'سماوي سايبر نيون'
+                      : cardConfig.borderTheme === 'purple'
+                      ? 'بنفسجي ملكي نيون'
+                      : cardConfig.borderTheme === 'gold'
+                      ? 'ذهبي مشع نيون'
+                      : cardConfig.borderTheme === 'neonGreen'
+                      ? 'أخضر فسفوري نيون'
+                      : cardConfig.borderTheme === 'red'
+                      ? 'أحمر ناري نيون'
+                      : cardConfig.borderTheme === 'white'
+                      ? 'أبيض كريستال ثلجي'
+                      : cardConfig.borderTheme === 'custom'
+                      ? 'لون إطار مخصص'
+                      : 'بدون إطار (شفاف خالص)'}
+                  </span>
+                </div>
+
+                {/* Preset Themes Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                  {[
+                    { id: 'tiktok', name: 'تيك توك نيون', gradient: 'from-[#00f2fe] to-[#fe2c55]' },
+                    { id: 'cyan', name: 'سماوي سايبر', gradient: 'from-[#00f2fe] to-[#3b82f6]' },
+                    { id: 'purple', name: 'بنفسجي ملكي', gradient: 'from-[#c084fc] to-[#ec4899]' },
+                    { id: 'gold', name: 'ذهبي نيون', gradient: 'from-[#fbbf24] to-[#d97706]' },
+                    { id: 'neonGreen', name: 'أخضر فسفوري', gradient: 'from-[#34d399] to-[#a3e635]' },
+                    { id: 'red', name: 'أحمر ناري', gradient: 'from-[#ff4d4d] to-[#b91c1c]' },
+                    { id: 'white', name: 'أبيض كريستال', gradient: 'from-[#ffffff] to-[#94a3b8]' },
+                    { id: 'custom', name: '🎨 لون مخصص', gradient: 'from-pink-500 to-cyan-500' },
+                    { id: 'transparent', name: 'بدون إطار (مفرغ)', gradient: 'from-slate-700 to-slate-800' },
+                  ].map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() =>
+                        setCardConfig({
+                          ...cardConfig,
+                          borderTheme: theme.id as any,
+                        })
+                      }
+                      className={`p-2.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 cursor-pointer ${
+                        cardConfig.borderTheme === theme.id
+                          ? 'bg-slate-800 text-white border-cyan-400 shadow-md ring-2 ring-cyan-400/40'
+                          : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-full bg-gradient-to-tr ${theme.gradient} flex-shrink-0 shadow-sm`} />
+                      <span className="truncate">{theme.name}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Border Color & Border Width */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                  {/* Custom Border Color Picker */}
+                  {cardConfig.borderTheme === 'custom' && (
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Palette className="w-3.5 h-3.5 text-rose-400" />
+                        <span>اختر لون الإطار المخصص:</span>
+                      </span>
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="color"
+                          value={cardConfig.customBorderColor || '#00f2fe'}
+                          onChange={(e) =>
+                            setCardConfig({ ...cardConfig, customBorderColor: e.target.value })
+                          }
+                          className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border-0"
+                        />
+                        <span className="text-xs font-mono font-bold text-white">
+                          {cardConfig.customBorderColor || '#00f2fe'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Border Width Slider */}
+                  {cardConfig.borderTheme !== 'transparent' && (
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-slate-300">سُمك وعرض إطار النيون:</span>
+                        <span className="font-mono text-cyan-300 font-bold">
+                          {cardConfig.borderWidth || 3.5}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="6"
+                        step="0.5"
+                        value={cardConfig.borderWidth || 3.5}
+                        onChange={(e) =>
+                          setCardConfig({ ...cardConfig, borderWidth: Number(e.target.value) })
+                        }
+                        className="w-full accent-cyan-400 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-500 font-bold">
+                        <span>1px (نحيف)</span>
+                        <span>3.5px (افتراضي متوهج)</span>
+                        <span>6px (عريض وقوي)</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 2: CARD BACKGROUND COLOR & TRANSPARENCY (لون وشفافية خلفية البوكس) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
+                <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                  <span className="text-sm font-black text-white flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-purple-400" />
+                    <span>لون وشفافية خلفية البوكس:</span>
+                  </span>
+
+                  {/* QUICK 1-CLICK PURE TRANSPARENT GLASS BUTTON */}
+                  <button
+                    onClick={() =>
+                      setCardConfig({
+                        ...cardConfig,
+                        bgType: 'transparent',
+                        bgOpacity: 0,
+                        blurAmount: 16,
+                      })
+                    }
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 border border-cyan-400/40 text-cyan-300 hover:text-white hover:border-cyan-400 text-xs font-black transition-all cursor-pointer shadow-sm"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                    <span>✨ تفعيل خلفية شفافة تماماً ببلور (بدون لون)</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
+                  {/* Background Color Picker & Quick Swatches */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-300">لون الخلفية المفضل:</span>
+                      <span className="text-xs font-mono font-bold text-white">
+                        {cardConfig.bgColor || '#000000'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="color"
+                        value={cardConfig.bgColor || '#000000'}
+                        onChange={(e) =>
+                          setCardConfig({
+                            ...cardConfig,
+                            bgColor: e.target.value,
+                            bgType: 'solid',
+                            bgOpacity: cardConfig.bgOpacity === 0 ? 80 : cardConfig.bgOpacity,
+                          })
+                        }
+                        className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border-0"
+                      />
+                      <span className="text-xs text-slate-400">
+                        اختر أي لون تريده للخلفية، ثم تحكم في درجة شفافيته بالسلايدر.
+                      </span>
+                    </div>
+
+                    {/* Quick Swatches */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {[
+                        { color: '#000000', name: 'أسود فاحم' },
+                        { color: '#0f172a', name: 'رمادي داكن' },
+                        { color: '#0b0f19', name: 'كحلي ليلي' },
+                        { color: '#1a0f2e', name: 'بنفسجي داكن' },
+                        { color: '#200b12', name: 'عنابي داكن' },
+                      ].map((s) => (
+                        <button
+                          key={s.color}
+                          onClick={() =>
+                            setCardConfig({
+                              ...cardConfig,
+                              bgColor: s.color,
+                              bgType: 'solid',
+                              bgOpacity: cardConfig.bgOpacity === 0 ? 80 : cardConfig.bgOpacity,
+                            })
+                          }
+                          title={s.name}
+                          style={{ backgroundColor: s.color }}
+                          className={`w-7 h-7 rounded-full border-2 transition-all cursor-pointer ${
+                            cardConfig.bgColor === s.color
+                              ? 'border-cyan-400 ring-2 ring-cyan-400/50 scale-110'
+                              : 'border-slate-700'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Background Opacity Slider (من 0% شفاف خالص إلى 100% معتم) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-slate-300">نسبة ظهور لون الخلفية (الشفافية):</span>
+                      <span className="font-mono text-purple-300 font-bold">
+                        {cardConfig.bgOpacity ?? 0}%
+                        {(cardConfig.bgOpacity ?? 0) === 0 ? ' (شفاف خالص بدون لون)' : ''}
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={cardConfig.bgOpacity ?? 0}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setCardConfig({
+                          ...cardConfig,
+                          bgOpacity: val,
+                          bgType: val === 0 ? 'transparent' : 'solid',
+                        });
+                      }}
+                      className="w-full accent-purple-400 cursor-pointer"
+                    />
+
+                    <div className="flex justify-between text-[10px] text-slate-500 font-bold">
+                      <span className="text-cyan-400">0% (شفافية كاملة)</span>
+                      <span>50% (نصف شفاف)</span>
+                      <span>100% (معتم تماماً)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: BACKDROP BLUR (البلور الضبابي الزجاجي الشفاف) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                    <span>تأثير البلور الضبابي الزجاجي (Backdrop Blur):</span>
+                  </span>
+                  <span className="text-xs font-mono font-bold text-cyan-300">
+                    {cardConfig.blurAmount && cardConfig.blurAmount > 0
+                      ? `${cardConfig.blurAmount}px بلور سينمائي`
+                      : 'بدون بلور (0px)'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  يمنح البوكس مظهراً زجاجياً أنيقاً يغبّش كاميرا البث أو الفيديو خلفه مباشرةً بدون التأثير على وضوح نصوص الرسائل! يعمل مع الخلفية الشفافة وأيضاً مع الخلفيات الملونة.
+                </p>
+
+                {/* Quick Blur Presets */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {[
+                    { label: 'بدون بلور (0px)', px: 0 },
+                    { label: 'بلور ناعم (8px)', px: 8 },
+                    { label: 'بلور سينمائي (16px)', px: 16 },
+                    { label: 'بلور قوي جداً (28px)', px: 28 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.px}
+                      onClick={() => setCardConfig({ ...cardConfig, blurAmount: preset.px })}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        (cardConfig.blurAmount || 0) === preset.px
+                          ? 'bg-cyan-500 text-black border-cyan-400 shadow-md font-black'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Blur Slider */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-300 font-bold">شريط درجة البلور الدقيقة (0px إلى 35px):</span>
+                    <span className="font-mono text-cyan-300 font-bold">{cardConfig.blurAmount || 0}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="35"
+                    step="1"
+                    value={cardConfig.blurAmount || 0}
+                    onChange={(e) =>
+                      setCardConfig({ ...cardConfig, blurAmount: Number(e.target.value) })
+                    }
+                    className="w-full accent-cyan-400 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 4: DIVIDER LINES CONTROLS (الخطان الفاصلان الأسودان) */}
               <div className="p-5 rounded-2xl bg-[#141724] border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <span className="text-sm font-black text-white flex items-center gap-2">
@@ -874,7 +1225,7 @@ export default function DashboardPage() {
                     />
                     <div className="flex justify-between text-[10px] text-slate-500 font-bold">
                       <span>1px (نحيف)</span>
-                      <span>3px (متوسط)</span>
+                      <span>2.5px (متوسط)</span>
                       <span>6px (عريض)</span>
                     </div>
                   </div>
@@ -899,66 +1250,6 @@ export default function DashboardPage() {
                       className="w-full accent-cyan-400 cursor-pointer"
                     />
                   </div>
-                </div>
-              </div>
-
-              {/* NEW SECTION 2: PURE TRANSPARENT BACKDROP BLUR (البلور الضبابي الشفاف) */}
-              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-black text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-cyan-400" />
-                    <span>تأثير البلور الضبابي داخل البوكس (Backdrop Blur):</span>
-                  </span>
-                  <span className="text-xs font-mono font-bold text-cyan-300">
-                    {cardConfig.blurAmount && cardConfig.blurAmount > 0
-                      ? `${cardConfig.blurAmount}px بلور سينمائي`
-                      : 'بدون بلور (0px)'}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  الخلفية تظل شفافة تماماً بدون أي ألوان، ولكن هذا الخيار يضبب الكاميرا والفيديو خلف البوكس بأسلوب سينمائي مريح للعين!
-                </p>
-
-                {/* Quick Blur Presets */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {[
-                    { label: 'بدون بلور (شفاف خالص)', px: 0 },
-                    { label: 'بلور خفيف (8px)', px: 8 },
-                    { label: 'بلور سينمائي (16px)', px: 16 },
-                    { label: 'بلور قوي جداً (26px)', px: 26 },
-                  ].map((preset) => (
-                    <button
-                      key={preset.px}
-                      onClick={() => setCardConfig({ ...cardConfig, blurAmount: preset.px })}
-                      className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                        (cardConfig.blurAmount || 0) === preset.px
-                          ? 'bg-cyan-500 text-black border-cyan-400 shadow-md font-black'
-                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Blur Slider */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300 font-bold">شريط درجة البلور الدقيقة (0px إلى 30px):</span>
-                    <span className="font-mono text-cyan-300 font-bold">{cardConfig.blurAmount || 0}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="30"
-                    step="1"
-                    value={cardConfig.blurAmount || 0}
-                    onChange={(e) =>
-                      setCardConfig({ ...cardConfig, blurAmount: Number(e.target.value) })
-                    }
-                    className="w-full accent-cyan-400 cursor-pointer"
-                  />
                 </div>
               </div>
 

@@ -34,7 +34,7 @@
         "dividerColor": "#334155",
         "dividerThickness": 2,
         "dividerOpacity": 65,
-        "blurAmount": 16
+        "blurAmount": 30
       },
       "createdAt": 1794615279890
     }
