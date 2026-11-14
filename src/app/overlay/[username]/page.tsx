@@ -20,6 +20,14 @@ export default function OverlayPage() {
   const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
+    // Force 100% transparent background on body and html for OBS and TikTok Live Studio
+    document.documentElement.classList.add('transparent-overlay');
+    document.body.classList.add('transparent-overlay');
+    document.documentElement.style.backgroundColor = 'transparent';
+    document.body.style.backgroundColor = 'transparent';
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+
     let lastMsgId = '';
 
     async function pollOverlay() {
@@ -36,7 +44,7 @@ export default function OverlayPage() {
             if (currentMsg.id !== lastMsgId) {
               lastMsgId = currentMsg.id;
               setAnimating(true);
-              setTimeout(() => setAnimating(false), 600);
+              setTimeout(() => setAnimating(false), 400);
             }
             setMessage(currentMsg);
           } else {
@@ -50,23 +58,43 @@ export default function OverlayPage() {
 
     pollOverlay();
     const interval = setInterval(pollOverlay, 2000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      document.documentElement.classList.remove('transparent-overlay');
+      document.body.classList.remove('transparent-overlay');
+    };
   }, [username]);
 
   return (
-    <div className="w-screen h-screen bg-transparent flex items-start justify-center p-6 overflow-hidden">
-      {/* OBS Studio Transparent Canvas */}
-      <div
-        className={`w-full max-w-xl transition-all duration-500 transform ${
-          animating ? 'scale-105 filter drop-shadow-[0_0_30px_#00f2fe]' : 'scale-100'
-        }`}
-      >
-        <LiveCard
-          user={user}
-          message={message}
-          customization={user.cardCustomization}
-        />
-      </div>
-    </div>
+    <>
+      {/* Force alpha transparency on HTML and BODY before any render */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            html, body {
+              background: transparent !important;
+              background-color: transparent !important;
+              overflow: hidden !important;
+            }
+          `,
+        }}
+      />
+
+      <main className="w-screen h-screen bg-transparent flex items-start justify-center p-4 sm:p-6 overflow-hidden">
+        {/* OBS Studio / TikTok Live Studio 100% Transparent Viewport */}
+        <div
+          className={`w-full max-w-xl transition-all duration-300 transform ${
+            animating ? 'scale-105 filter drop-shadow-[0_0_25px_#00f2fe]' : 'scale-100'
+          }`}
+        >
+          <LiveCard
+            user={user}
+            message={message}
+            customization={user.cardCustomization}
+          />
+        </div>
+      </main>
+    </>
   );
 }

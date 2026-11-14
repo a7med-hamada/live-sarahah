@@ -17,6 +17,14 @@ body {
   overflow-x: hidden;
 }
 
+/* Force 100% alpha transparency for OBS overlay canvas */
+html.transparent-overlay,
+body.transparent-overlay {
+  background: transparent !important;
+  background-color: transparent !important;
+  overflow: hidden !important;
+}
+
 /* 3D TikTok Chromatic Aberration Text */
 .tiktok-glitch {
   position: relative;
@@ -52,20 +60,24 @@ body {
   box-shadow: 0px 0px 0px #00f2fe;
 }
 
-/* Live Floating Card Glow Gradient Border */
-.live-neon-card {
+/* 100% HOLLOW NEON BORDER (Zero fill inside, dynamic height containing footer) */
+.neon-hollow-border {
   position: relative;
   border-radius: 1.5rem;
-  background: linear-gradient(135deg, #00f2fe 0%, #d946ef 50%, #fe2c55 100%);
-  padding: 3px;
-  box-shadow: 0 10px 40px -10px rgba(0, 242, 254, 0.35), 0 10px 40px -10px rgba(254, 44, 85, 0.35);
 }
 
-.live-neon-inner {
-  background: #0f1117;
-  border-radius: calc(1.5rem - 3px);
-  padding: 1.25rem 1.5rem;
-  color: #ffffff;
+.neon-hollow-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1.5rem;
+  padding: 3.5px;
+  background: var(--border-gradient, linear-gradient(135deg, #00f2fe 0%, #d946ef 50%, #fe2c55 100%));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  filter: var(--border-glow, drop-shadow(0 0 10px rgba(0, 242, 254, 0.6)) drop-shadow(0 0 20px rgba(254, 44, 85, 0.4)));
 }
 
 /* Avatar Ring */

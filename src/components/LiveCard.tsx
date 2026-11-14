@@ -43,7 +43,7 @@ export default function LiveCard({
     showName: true,
     textAlign: 'right',
     badgeText: 'رسالة مجهولة 💌',
-    bgType: 'transparent', // Default transparent as requested!
+    bgType: 'transparent',
     bgColor: '#0f1117',
     bgOpacity: 0,
     messageColor: '#ffffff',
@@ -57,54 +57,40 @@ export default function LiveCard({
   const displayName =
     cardConfig.cardHeaderName?.trim() || user.bigTitle || user.displayName || 'Live Stream';
 
-  // Determine border colors
-  let stop1 = '#00f2fe';
-  let stop2 = '#d946ef';
-  let stop3 = '#fe2c55';
-  let glowColor1 = 'rgba(0, 242, 254, 0.6)';
-  let glowColor2 = 'rgba(254, 44, 85, 0.4)';
+  // Determine border gradient and glow variables
+  let borderGradient = 'linear-gradient(135deg, #00f2fe 0%, #d946ef 50%, #fe2c55 100%)';
+  let borderGlow =
+    'drop-shadow(0 0 10px rgba(0, 242, 254, 0.6)) drop-shadow(0 0 20px rgba(254, 44, 85, 0.4))';
 
   if (cardConfig.borderTheme === 'cyan') {
-    stop1 = '#00f2fe';
-    stop2 = '#38bdf8';
-    stop3 = '#3b82f6';
-    glowColor1 = 'rgba(0, 242, 254, 0.7)';
-    glowColor2 = 'rgba(59, 130, 246, 0.5)';
+    borderGradient = 'linear-gradient(135deg, #00f2fe 0%, #38bdf8 50%, #3b82f6 100%)';
+    borderGlow = 'drop-shadow(0 0 12px rgba(0, 242, 254, 0.7))';
   } else if (cardConfig.borderTheme === 'purple') {
-    stop1 = '#c084fc';
-    stop2 = '#d946ef';
-    stop3 = '#ec4899';
-    glowColor1 = 'rgba(192, 132, 252, 0.7)';
-    glowColor2 = 'rgba(236, 72, 153, 0.5)';
+    borderGradient = 'linear-gradient(135deg, #c084fc 0%, #d946ef 50%, #ec4899 100%)';
+    borderGlow = 'drop-shadow(0 0 12px rgba(236, 72, 153, 0.7))';
   } else if (cardConfig.borderTheme === 'gold') {
-    stop1 = '#fbbf24';
-    stop2 = '#f59e0b';
-    stop3 = '#d97706';
-    glowColor1 = 'rgba(251, 191, 36, 0.7)';
-    glowColor2 = 'rgba(217, 119, 6, 0.5)';
+    borderGradient = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)';
+    borderGlow = 'drop-shadow(0 0 12px rgba(245, 158, 11, 0.7))';
   } else if (cardConfig.borderTheme === 'neonGreen') {
-    stop1 = '#34d399';
-    stop2 = '#10b981';
-    stop3 = '#a3e635';
-    glowColor1 = 'rgba(52, 211, 153, 0.7)';
-    glowColor2 = 'rgba(163, 230, 53, 0.5)';
+    borderGradient = 'linear-gradient(135deg, #34d399 0%, #10b981 50%, #a3e635 100%)';
+    borderGlow = 'drop-shadow(0 0 12px rgba(16, 185, 129, 0.7))';
+  } else if (cardConfig.borderTheme === 'transparent') {
+    borderGradient = 'transparent';
+    borderGlow = 'none';
   }
 
   const isTransparent = cardConfig.bgType === 'transparent' || cardConfig.bgOpacity === 0;
 
-  // Determine fill for the card interior:
-  let cardFill = 'transparent';
+  // Determine inner background
+  let cardBg = 'transparent';
   let cardBackdrop = 'none';
 
   if (!isTransparent) {
-    cardFill = hexToRgba(cardConfig.bgColor || '#0f1117', cardConfig.bgOpacity ?? 90);
+    cardBg = hexToRgba(cardConfig.bgColor || '#0f1117', cardConfig.bgOpacity ?? 90);
     if ((cardConfig.bgOpacity ?? 90) < 90 && (cardConfig.bgOpacity ?? 90) > 0) {
       cardBackdrop = 'blur(10px)';
     }
   }
-
-  // Unique gradient ID per card to avoid DOM collisions
-  const gradId = `liveCardGrad_${user.username || 'def'}`;
 
   // Alignment classes
   const alignClass =
@@ -118,44 +104,17 @@ export default function LiveCard({
     return (
       <div
         id="live-card-element"
-        style={{
-          backgroundColor: cardFill,
-          backdropFilter: cardBackdrop,
-          WebkitBackdropFilter: cardBackdrop,
-          borderRadius: '1.5rem',
-        }}
-        className={`relative max-w-xl w-full mx-auto p-6 sm:p-7 text-center space-y-3 min-h-[200px] flex flex-col items-center justify-center transition-all ${className}`}
+        style={
+          {
+            backgroundColor: cardBg,
+            backdropFilter: cardBackdrop,
+            WebkitBackdropFilter: cardBackdrop,
+            '--border-gradient': borderGradient,
+            '--border-glow': borderGlow,
+          } as React.CSSProperties
+        }
+        className={`neon-hollow-border max-w-xl w-full mx-auto p-6 sm:p-7 text-center space-y-3 min-h-[190px] flex flex-col items-center justify-center transition-all ${className}`}
       >
-        {/* SVG Hollow Border (zero inside background!) */}
-        {cardConfig.borderTheme !== 'transparent' && (
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            style={{ overflow: 'visible' }}
-          >
-            <defs>
-              <linearGradient id={`${gradId}_empty`} x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor={stop1} />
-                <stop offset="50%" stopColor={stop2} />
-                <stop offset="100%" stopColor={stop3} />
-              </linearGradient>
-            </defs>
-            <rect
-              x="2"
-              y="2"
-              width="calc(100% - 4px)"
-              height="calc(100% - 4px)"
-              rx="24"
-              ry="24"
-              fill="none"
-              stroke={`url(#${gradId}_empty)`}
-              strokeWidth="3.5"
-              style={{
-                filter: `drop-shadow(0 0 10px ${glowColor1}) drop-shadow(0 0 20px ${glowColor2})`,
-              }}
-            />
-          </svg>
-        )}
-
         <div className="relative z-10 space-y-2">
           <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-cyan-400 mx-auto">
             <MessageSquare className="w-6 h-6 animate-pulse" />
@@ -172,45 +131,18 @@ export default function LiveCard({
   return (
     <div
       id="live-card-element"
-      style={{
-        backgroundColor: cardFill,
-        backdropFilter: cardBackdrop,
-        WebkitBackdropFilter: cardBackdrop,
-        borderRadius: '1.5rem',
-      }}
-      className={`relative max-w-xl w-full mx-auto p-5 sm:p-6 space-y-4 transition-all ${className}`}
+      style={
+        {
+          backgroundColor: cardBg,
+          backdropFilter: cardBackdrop,
+          WebkitBackdropFilter: cardBackdrop,
+          '--border-gradient': borderGradient,
+          '--border-glow': borderGlow,
+        } as React.CSSProperties
+      }
+      className={`neon-hollow-border max-w-xl w-full mx-auto p-5 sm:p-6 space-y-4 transition-all ${className}`}
     >
-      {/* SVG Hollow Border: COMPLETELY HOLLOW INSIDE (fill="none") */}
-      {cardConfig.borderTheme !== 'transparent' && (
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ overflow: 'visible' }}
-        >
-          <defs>
-            <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={stop1} />
-              <stop offset="50%" stopColor={stop2} />
-              <stop offset="100%" stopColor={stop3} />
-            </linearGradient>
-          </defs>
-          <rect
-            x="2"
-            y="2"
-            width="calc(100% - 4px)"
-            height="calc(100% - 4px)"
-            rx="24"
-            ry="24"
-            fill="none"
-            stroke={`url(#${gradId})`}
-            strokeWidth="3.5"
-            style={{
-              filter: `drop-shadow(0 0 10px ${glowColor1}) drop-shadow(0 0 20px ${glowColor2})`,
-            }}
-          />
-        </svg>
-      )}
-
-      {/* Card Header */}
+      {/* 1. Card Header */}
       <div className="relative z-10 flex items-center justify-between border-b border-white/15 pb-3">
         {/* Badge */}
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-rose-600/95 to-pink-600/95 text-white text-xs font-bold shadow-lg shadow-pink-950/60">
@@ -224,7 +156,7 @@ export default function LiveCard({
               style={{
                 fontSize: `${cardConfig.nameFontSize || 15}px`,
                 color: cardConfig.nameColor || '#ffffff',
-                textShadow: '0 2px 8px rgba(0,0,0,0.9)',
+                textShadow: '0 2px 8px rgba(0,0,0,0.95)',
               }}
               className="font-extrabold tracking-wide transition-all"
             >
@@ -253,7 +185,7 @@ export default function LiveCard({
         </div>
       </div>
 
-      {/* Message Content */}
+      {/* 2. Message Content */}
       <div className={`relative z-10 py-3 px-2 min-h-[70px] flex items-center ${alignClass}`}>
         <p
           style={{
@@ -273,14 +205,14 @@ export default function LiveCard({
         </p>
       </div>
 
-      {/* Card Footer */}
+      {/* 3. Card Footer - FULLY INSIDE THE BORDER */}
       {showFooter && (
         <div className="relative z-10 pt-2 border-t border-white/15 flex items-center justify-between text-slate-400">
           <div
             style={{
               fontSize: `${cardConfig.footerFontSize || 12}px`,
               color: cardConfig.footerColor || '#67e8f9',
-              textShadow: '0 1px 6px rgba(0,0,0,0.9)',
+              textShadow: '0 1px 6px rgba(0,0,0,0.95)',
             }}
             className="flex items-center gap-1.5 font-bold transition-all"
           >
@@ -290,7 +222,10 @@ export default function LiveCard({
 
           <div className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-            <span className="text-[10px] text-slate-300 font-mono font-bold" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
+            <span
+              className="text-[10px] text-slate-300 font-mono font-bold"
+              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.95)' }}
+            >
               LIVE NOW
             </span>
           </div>
