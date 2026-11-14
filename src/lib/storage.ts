@@ -24,7 +24,7 @@ function resolveDbPath(): { runtimePath: string; seedPath: string } {
 
   if (isServerless) {
     return {
-      runtimePath: path.join(os.tmpdir(), 'live_database.json'),
+      runtimePath: path.join(os.tmpdir(), 'live_db_v2.json'),
       seedPath,
     };
   }
@@ -45,7 +45,7 @@ function resolveDbPath(): { runtimePath: string; seedPath: string } {
   } catch {
     // If local directory is not writable (EROFS), fallback to tmpdir
     return {
-      runtimePath: path.join(os.tmpdir(), 'live_database.json'),
+      runtimePath: path.join(os.tmpdir(), 'live_db_v2.json'),
       seedPath,
     };
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
+import { sanitizeText } from '@/lib/security';
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,8 +46,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add message without touching activeOverlayMessageId so current live card never shifts!
-    const message = Storage.addMessage(username, content);
+    // Add sanitized message without touching activeOverlayMessageId
+    const sanitizedContent = sanitizeText(content, 1500);
+    const message = Storage.addMessage(username, sanitizedContent);
 
     return NextResponse.json({ success: true, data: message }, { status: 201 });
   } catch (error: any) {
