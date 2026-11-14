@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@/lib/storage';
 import { sanitizeText } from '@/lib/security';
+import { containsProfanity, censorProfanity } from '@/lib/profanity';
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,9 +47,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add sanitized message without touching activeOverlayMessageId
-    const sanitizedContent = sanitizeText(content, 1500);
-    const message = Storage.addMessage(username, sanitizedContent);
+    let finalContent = sanitizeText(content, 1500);
+
+    // Anti-Ban Profanity Filter
+    const recipientConfig = recipient.cardCustomization || {};
+    const isFilterEnabled = recipientConfig.enableProfanityFilter !== false;
+    const filterAction = recipientConfig.profanityAction || 'censor';
+    const customWords = recipientConfig.customBlockedWords || '';
+
+    if (isFilterEnabled) {
+      if (filterAction === 'block') {
+        if (containsProfanity(finalContent, customWords)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'عذراً، الرسالة تحتوي على ألفاظ غير لائقة، ولا يمكن إرسالها لحماية البث المباشر من البان 🛡️',
+            },
+            { status: 400 }
+          );
+        }
+      } else {
+        // Censor mode: replace bad words with ****
+        const { cleanText } = censorProfanity(finalContent, customWords);
+        finalContent = cleanText;
+      }
+    }
+
+    // Add message without touching activeOverlayMessageId so current live card never shifts!
+    const message = Storage.addMessage(username, finalContent);
 
     return NextResponse.json({ success: true, data: message }, { status: 201 });
   } catch (error: any) {

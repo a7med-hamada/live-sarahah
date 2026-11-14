@@ -28,6 +28,19 @@ export interface CardCustomization {
 
   // Pure Transparent Blur (درجة البلور الضبابي الشفاف)
   blurAmount?: number; // 0 to 35 px (default 0)
+
+  // Sound Alerts (المؤثرات الصوتية عند وصول رسالة جديدة)
+  enableSoundAlert?: boolean; // default true
+  soundTheme?: 'tiktokDing' | 'neonPop' | 'sparkleChime' | 'cyberpunkPulse' | 'smoothSwoosh'; // default 'tiktokDing'
+  soundVolume?: number; // 0 to 100 (default 80)
+
+  // Card Entrance Animations (أنيميشن دخول الكارت)
+  animationType?: 'slideUp' | 'neonGlitch' | 'glassFade' | 'flip3d'; // default 'slideUp'
+
+  // Anti-Ban & Profanity Filter (فلتر حجب الشتائم وحماية البث)
+  enableProfanityFilter?: boolean; // default true
+  profanityAction?: 'censor' | 'block'; // 'censor' (استبدال بنجوم ****) أو 'block' (منع الإرسال)
+  customBlockedWords?: string; // كلمات مخصصة يحددها الستريمر
 }
 
 export interface UserProfile {

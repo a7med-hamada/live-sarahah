@@ -42,9 +42,16 @@ import {
   SunMedium,
   Minus,
   Sparkle,
-  Layers
+  Layers,
+  Volume2,
+  VolumeX,
+  Shield,
+  Film,
+  PlayCircle,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
+import { playSound, SOUND_PRESETS, SoundTheme } from '@/lib/sounds';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -64,6 +71,7 @@ export default function DashboardPage() {
   const [showGuideModal, setShowGuideModal] = useState(false);
 
   const [previewBg, setPreviewBg] = useState<'camera' | 'game' | 'grid'>('camera');
+  const [previewAnimKey, setPreviewAnimKey] = useState<number>(0);
 
   // Card Customization state (live adjustable controls)
   const [cardConfig, setCardConfig] = useState<CardCustomization>({
@@ -90,6 +98,13 @@ export default function DashboardPage() {
     dividerThickness: 2,
     dividerOpacity: 85,
     blurAmount: 0,
+    enableSoundAlert: true,
+    soundTheme: 'tiktokDing',
+    soundVolume: 80,
+    animationType: 'slideUp',
+    enableProfanityFilter: true,
+    profanityAction: 'censor',
+    customBlockedWords: '',
   });
 
   // Profile Form state
@@ -741,7 +756,10 @@ export default function DashboardPage() {
               </div>
 
               {/* 3. The Live Floating Card with Customizations */}
-              <div className="my-auto relative z-10 w-full flex justify-center py-4">
+              <div
+                key={previewAnimKey}
+                className={`my-auto relative z-10 w-full flex justify-center py-4 anim-${cardConfig.animationType || 'slideUp'}`}
+              >
                 <LiveCard
                   user={currentUser || { displayName: 'Streamer', bigTitle: 'Live Stream' }}
                   message={activeMsg}
@@ -1251,6 +1269,314 @@ export default function DashboardPage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* SECTION: NOTIFICATION SOUND ALERTS (مؤثرات صوتية نيون) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
+                <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-black text-white flex items-center gap-2">
+                      <Volume2 className="w-4 h-4 text-cyan-400" />
+                      <span>أصوات التنبيه النيون عند وصول رسالة جديدة (Notification SFX):</span>
+                    </span>
+                    <p className="text-xs text-slate-400">
+                      يعمل الصوت تلقائياً داخل برنامج البث OBS / TikTok Live Studio وعند وصول رسائل جديدة لتنبيهك وتنبيه المشاهدين!
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-300">تشغيل الصوت:</span>
+                    <input
+                      type="checkbox"
+                      checked={cardConfig.enableSoundAlert !== false}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, enableSoundAlert: e.target.checked })
+                      }
+                      className="w-5 h-5 accent-cyan-400 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {cardConfig.enableSoundAlert !== false && (
+                  <div className="space-y-4 pt-1 animate-in fade-in">
+                    {/* Sounds Selection Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {SOUND_PRESETS.map((preset) => (
+                        <div
+                          key={preset.id}
+                          className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                            (cardConfig.soundTheme || 'tiktokDing') === preset.id
+                              ? 'bg-gradient-to-br from-cyan-950/40 to-slate-900 border-cyan-400 shadow-lg shadow-cyan-950/30 ring-1 ring-cyan-400/40'
+                              : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                                <span>{preset.icon}</span>
+                                <span>{preset.name}</span>
+                              </span>
+                              {(cardConfig.soundTheme || 'tiktokDing') === preset.id && (
+                                <span className="px-2 py-0.5 rounded-full bg-cyan-400 text-black text-[10px] font-black">
+                                  مفعل
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              {preset.description}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCardConfig({ ...cardConfig, soundTheme: preset.id });
+                                playSound(preset.id, cardConfig.soundVolume ?? 80);
+                              }}
+                              className={`flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                                (cardConfig.soundTheme || 'tiktokDing') === preset.id
+                                  ? 'bg-cyan-500 text-black font-black'
+                                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                              }`}
+                            >
+                              <span>اختيار هذا الصوت</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => playSound(preset.id, cardConfig.soundVolume ?? 80)}
+                              title="استمع للصوت للتجربة"
+                              className="p-1.5 rounded-xl bg-slate-800 hover:bg-cyan-500/20 text-cyan-400 border border-slate-700 hover:border-cyan-400 transition-all cursor-pointer flex items-center justify-center"
+                            >
+                              <PlayCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Volume Slider */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+                        <Volume2 className="w-4 h-4 text-cyan-400" />
+                        <span>مستوى وقوة صوت التنبيه:</span>
+                        <span className="font-mono text-cyan-300">{cardConfig.soundVolume ?? 80}%</span>
+                      </div>
+
+                      <div className="flex items-center gap-3 w-full sm:w-64">
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          step="5"
+                          value={cardConfig.soundVolume ?? 80}
+                          onChange={(e) =>
+                            setCardConfig({ ...cardConfig, soundVolume: Number(e.target.value) })
+                          }
+                          className="w-full accent-cyan-400 cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => playSound(cardConfig.soundTheme || 'tiktokDing', cardConfig.soundVolume ?? 80)}
+                          className="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          🔊 تجربة
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION: ENTRANCE ANIMATIONS (أنيميشن حركة ظهور الكارت) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
+                <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-black text-white flex items-center gap-2">
+                      <Film className="w-4 h-4 text-purple-400" />
+                      <span>أنيميشن حركة ظهور الكارت على شاشة البث (Entrance Animation):</span>
+                    </span>
+                    <p className="text-xs text-slate-400">
+                      تأثير حركي احترافي يظهر به الكارت في كل مرة تتغير فيها الرسالة على شاشة الـ Live!
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewAnimKey((prev) => prev + 1);
+                      if (cardConfig.enableSoundAlert !== false) {
+                        playSound(cardConfig.soundTheme || 'tiktokDing', cardConfig.soundVolume ?? 80);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>🎬 تشغيل معاينة الحركة الآن</span>
+                  </button>
+                </div>
+
+                {/* Animation Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {[
+                    {
+                      id: 'slideUp',
+                      name: 'انزلاق ناعم من الأسفل',
+                      desc: 'انزلاق سينمائي سلس ومرن يرتفع لأعلى بهدوء وأناقة',
+                      icon: '⬆️',
+                    },
+                    {
+                      id: 'neonGlitch',
+                      name: 'وميض نيون واهتزاز خفيف',
+                      desc: 'توهج نيون مبهج مع قفزة ارتدادية مرحة تيك توك ستايل',
+                      icon: '⚡',
+                    },
+                    {
+                      id: 'glassFade',
+                      name: 'تلاشي زجاجي سينمائي',
+                      desc: 'ظهور وتكبير هادئ من المركز مع تركيز ناعم ومموه',
+                      icon: '🔍',
+                    },
+                    {
+                      id: 'flip3d',
+                      name: 'دوران ثلاثي الأبعاد 3D',
+                      desc: 'دوران مجسم من المحور بزاوية ثلاثية الأبعاد مميزة',
+                      icon: '🔄',
+                    },
+                  ].map((anim) => (
+                    <button
+                      type="button"
+                      key={anim.id}
+                      onClick={() => {
+                        setCardConfig({ ...cardConfig, animationType: anim.id as any });
+                        setPreviewAnimKey((prev) => prev + 1);
+                      }}
+                      className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                        (cardConfig.animationType || 'slideUp') === anim.id
+                          ? 'bg-gradient-to-br from-purple-950/40 to-slate-900 border-purple-400 shadow-lg shadow-purple-950/30 ring-1 ring-purple-400/40'
+                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-base">{anim.icon}</span>
+                        {(cardConfig.animationType || 'slideUp') === anim.id && (
+                          <span className="px-2 py-0.5 rounded-full bg-purple-400 text-black text-[10px] font-black">
+                            مفعل
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-bold text-white">{anim.name}</span>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">{anim.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* SECTION: ANTI-BAN & PROFANITY FILTER (حماية البث من البان) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-rose-500/20 space-y-4">
+                <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-black text-white flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-rose-400" />
+                      <span>نظام فلترة وحجب الشتائم التلقائي (Anti-Ban Protection):</span>
+                    </span>
+                    <p className="text-xs text-slate-400">
+                      يحمي حسابك في تيك توك من الحظر (Live Ban) عبر التعرف التلقائي على الألفاظ البذيئة والشتائم وحجبها فوراً!
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-300">تفعيل الفلتر:</span>
+                    <input
+                      type="checkbox"
+                      checked={cardConfig.enableProfanityFilter !== false}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, enableProfanityFilter: e.target.checked })
+                      }
+                      className="w-5 h-5 accent-rose-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {cardConfig.enableProfanityFilter !== false && (
+                  <div className="space-y-4 pt-1 animate-in fade-in">
+                    {/* Action Mode Choice */}
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold text-slate-300">طريقة التعامل مع الرسائل التي تحتوي على كلمات غير لائقة:</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setCardConfig({ ...cardConfig, profanityAction: 'censor' })}
+                          className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer flex items-start gap-3 ${
+                            (cardConfig.profanityAction || 'censor') === 'censor'
+                              ? 'bg-rose-950/20 border-rose-400 ring-1 ring-rose-400/40'
+                              : 'bg-slate-900/60 border-slate-800 hover:bg-slate-800'
+                          }`}
+                        >
+                          <span className="text-xl">✨</span>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-white">استبدال الشتائم بنجوم (****)</span>
+                              {(cardConfig.profanityAction || 'censor') === 'censor' && (
+                                <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-bold">
+                                  مختار
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                              تصل الرسالة وتُعرض في البث ولكن يتم تشفير الكلمات المسيئة بنجوم لحماية المشاهدين واللايف.
+                            </p>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setCardConfig({ ...cardConfig, profanityAction: 'block' })}
+                          className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer flex items-start gap-3 ${
+                            cardConfig.profanityAction === 'block'
+                              ? 'bg-rose-950/20 border-rose-400 ring-1 ring-rose-400/40'
+                              : 'bg-slate-900/60 border-slate-800 hover:bg-slate-800'
+                          }`}
+                        >
+                          <span className="text-xl">🚫</span>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-white">حجب ومنع إرسال الرسالة نهائياً</span>
+                              {cardConfig.profanityAction === 'block' && (
+                                <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-bold">
+                                  مختار
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                              يرفض السيرفر إرسال الرسالة ويظهر تنبيهاً للمرسل: "عذراً، الرسالة تحتوي على ألفاظ غير لائقة".
+                            </p>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Custom Blocked Words Input */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300">
+                          إضافة كلمات مخصصة لقائمة الحظر (اختياري):
+                        </span>
+                        <span className="text-[11px] text-slate-500">افصل بين الكلمات بفواصل (، أو ,)</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={cardConfig.customBlockedWords || ''}
+                        onChange={(e) =>
+                          setCardConfig({ ...cardConfig, customBlockedWords: e.target.value })
+                        }
+                        placeholder="مثال: كلمة1، كلمة2، كلمة3"
+                        className="w-full bg-[#181a24] border border-slate-800 focus:border-rose-400 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* SECTION 3: TEXT COLORS (ألوان النصوص) */}

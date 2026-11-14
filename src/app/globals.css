@@ -106,3 +106,76 @@ body.transparent-overlay {
 ::-webkit-scrollbar-thumb:hover {
   background: #3b4055;
 }
+
+/* =========================================================
+   CINEMATIC LIVE CARD ENTRANCE ANIMATIONS
+   ========================================================= */
+
+@keyframes cardSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.96);
+  }
+  60% {
+    transform: translateY(-4px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.anim-slideUp {
+  animation: cardSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardNeonGlitch {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: brightness(2) drop-shadow(0 0 35px #00f2fe);
+  }
+  30% {
+    opacity: 0.95;
+    transform: scale(1.04) skewX(-1.5deg);
+    filter: brightness(1.6) drop-shadow(0 0 25px #fe2c55);
+  }
+  60% {
+    transform: scale(0.99) skewX(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) skewX(0);
+    filter: none;
+  }
+}
+.anim-neonGlitch {
+  animation: cardNeonGlitch 0.48s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+
+@keyframes cardGlassFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.anim-glassFade {
+  animation: cardGlassFade 0.4s ease-out forwards;
+}
+
+@keyframes cardFlip3d {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) rotateX(35deg) translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) rotateX(0deg) translateY(0) scale(1);
+  }
+}
+.anim-flip3d {
+  animation: cardFlip3d 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

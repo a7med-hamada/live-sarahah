@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import LiveCard from '@/components/LiveCard';
 import { AnonymousMessage, UserProfile } from '@/lib/types';
+import { playSound } from '@/lib/sounds';
 
 export default function OverlayPage() {
   const params = useParams();
@@ -17,7 +18,7 @@ export default function OverlayPage() {
     cardCustomization: {},
   });
   const [message, setMessage] = useState<AnonymousMessage | null>(null);
-  const [animating, setAnimating] = useState(false);
+  const [animKey, setAnimKey] = useState<number>(0);
 
   useEffect(() => {
     // Force 100% transparent background on body and html for OBS and TikTok Live Studio
@@ -29,6 +30,7 @@ export default function OverlayPage() {
     document.body.style.background = 'transparent';
 
     let lastMsgId = '';
+    let isFirstPoll = true;
 
     async function pollOverlay() {
       if (!username) return;
@@ -43,8 +45,13 @@ export default function OverlayPage() {
           if (currentMsg) {
             if (currentMsg.id !== lastMsgId) {
               lastMsgId = currentMsg.id;
-              setAnimating(true);
-              setTimeout(() => setAnimating(false), 400);
+              setAnimKey((prev) => prev + 1);
+
+              // Play Sound Alert (avoid loud sound on very initial page load)
+              const cardCfg = data.data.user?.cardCustomization || {};
+              if (!isFirstPoll && cardCfg.enableSoundAlert !== false) {
+                playSound(cardCfg.soundTheme || 'tiktokDing', cardCfg.soundVolume ?? 80);
+              }
             }
             setMessage(currentMsg);
           } else {
@@ -53,6 +60,8 @@ export default function OverlayPage() {
         }
       } catch (err) {
         console.error('Error polling overlay:', err);
+      } finally {
+        isFirstPoll = false;
       }
     }
 
@@ -65,6 +74,8 @@ export default function OverlayPage() {
       document.body.classList.remove('transparent-overlay');
     };
   }, [username]);
+
+  const animationClass = `anim-${user.cardCustomization?.animationType || 'slideUp'}`;
 
   return (
     <>
@@ -84,9 +95,8 @@ export default function OverlayPage() {
       <main className="w-screen h-screen bg-transparent flex items-start justify-center p-4 sm:p-6 overflow-hidden">
         {/* OBS Studio / TikTok Live Studio 100% Transparent Viewport */}
         <div
-          className={`w-full max-w-xl transition-all duration-300 transform ${
-            animating ? 'scale-105 filter drop-shadow-[0_0_25px_#00f2fe]' : 'scale-100'
-          }`}
+          key={animKey}
+          className={`w-full max-w-xl transition-all ${animationClass}`}
         >
           <LiveCard
             user={user}
