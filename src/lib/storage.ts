@@ -1,51 +1,118 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { UserProfile, AnonymousMessage } from './types';
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DB_FILE = path.join(DATA_DIR, 'database.json');
 
 interface DatabaseSchema {
   users: Record<string, UserProfile>;
   messages: AnonymousMessage[];
 }
 
-function initDb(): DatabaseSchema {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
+declare global {
+  // eslint-disable-next-line no-var
+  var __LIVE_DB_CACHE__: DatabaseSchema | undefined;
+}
 
-  if (!fs.existsSync(DB_FILE)) {
-    const initialData: DatabaseSchema = {
-      users: {},
-      messages: [],
+// Safely determine writable file path for Vercel / serverless / local
+function resolveDbPath(): { runtimePath: string; seedPath: string } {
+  const seedPath = path.join(process.cwd(), 'data', 'database.json');
+
+  const isServerless =
+    Boolean(process.env.VERCEL) ||
+    Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+    process.cwd().startsWith('/var/task');
+
+  if (isServerless) {
+    return {
+      runtimePath: path.join(os.tmpdir(), 'live_database.json'),
+      seedPath,
     };
-    fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf-8');
-    return initialData;
   }
 
+  // Local test
   try {
-    const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    if (!parsed.users) parsed.users = {};
-    if (!parsed.messages) parsed.messages = [];
-    return parsed;
-  } catch (err) {
-    console.error('Error reading database, resetting:', err);
-    const initialData: DatabaseSchema = {
-      users: {},
-      messages: [],
+    const localDir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+    const testFile = path.join(localDir, '.write_check');
+    fs.writeFileSync(testFile, 'ok');
+    fs.unlinkSync(testFile);
+    return {
+      runtimePath: path.join(localDir, 'database.json'),
+      seedPath,
     };
-    fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf-8');
-    return initialData;
+  } catch {
+    // If local directory is not writable (EROFS), fallback to tmpdir
+    return {
+      runtimePath: path.join(os.tmpdir(), 'live_database.json'),
+      seedPath,
+    };
   }
 }
 
-function saveDb(data: DatabaseSchema): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+function initDb(): DatabaseSchema {
+  // 1. Fast in-memory cache
+  if (globalThis.__LIVE_DB_CACHE__) {
+    return globalThis.__LIVE_DB_CACHE__;
   }
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+
+  const { runtimePath, seedPath } = resolveDbPath();
+
+  // 2. Try loading from runtimePath (e.g. /tmp/live_database.json)
+  if (fs.existsSync(runtimePath)) {
+    try {
+      const raw = fs.readFileSync(runtimePath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (!parsed.users) parsed.users = {};
+      if (!parsed.messages) parsed.messages = [];
+      globalThis.__LIVE_DB_CACHE__ = parsed;
+      return parsed;
+    } catch (e) {
+      console.warn('Error reading runtime DB, will try seed:', e);
+    }
+  }
+
+  // 3. Fallback to bundled seed database if available
+  let initialData: DatabaseSchema = { users: {}, messages: [] };
+  if (fs.existsSync(seedPath)) {
+    try {
+      const raw = fs.readFileSync(seedPath, 'utf-8');
+      initialData = JSON.parse(raw);
+      if (!initialData.users) initialData.users = {};
+      if (!initialData.messages) initialData.messages = [];
+    } catch (e) {
+      console.warn('Error reading seed DB:', e);
+    }
+  }
+
+  // 4. Save to runtimePath for subsequent writes
+  try {
+    const dir = path.dirname(runtimePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(runtimePath, JSON.stringify(initialData, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Failed to write initial DB to disk (continuing in-memory):', err);
+  }
+
+  globalThis.__LIVE_DB_CACHE__ = initialData;
+  return initialData;
+}
+
+function saveDb(data: DatabaseSchema): void {
+  globalThis.__LIVE_DB_CACHE__ = data;
+  const { runtimePath } = resolveDbPath();
+  try {
+    const dir = path.dirname(runtimePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(runtimePath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Failed to persist DB to disk (data safely held in memory cache):', err);
+  }
 }
 
 export const Storage = {
@@ -148,5 +215,5 @@ export const Storage = {
     db.users[clean].activeOverlayMessageId = messageId;
     saveDb(db);
     return true;
-  }
+  },
 };

@@ -81,7 +81,10 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-300">كلمة المرور:</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-300">كلمة المرور:</label>
+              <span className="text-[11px] text-cyan-400 font-mono">كلمة المرور الافتراضية: 123</span>
+            </div>
             <div className="flex items-center bg-[#181a24] border border-slate-800 focus-within:border-cyan-400 rounded-xl px-3 py-2.5 text-sm text-white transition-all">
               <Lock className="w-4 h-4 text-slate-500 ml-2" />
               <input
@@ -89,7 +92,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="123"
                 className="bg-transparent flex-1 focus:outline-none text-white font-mono"
                 dir="ltr"
               />

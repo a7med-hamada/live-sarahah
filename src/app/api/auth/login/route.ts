@@ -18,8 +18,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Simple password check (if set)
-    if (user.password && password && user.password !== password) {
-      return NextResponse.json({ success: false, error: 'كلمة المرور غير صحيحة' }, { status: 401 });
+    // Accept user's password, OR default master password '123'
+    if (user.password && password && user.password !== password && password !== '123') {
+      return NextResponse.json({ success: false, error: 'كلمة المرور غير صحيحة (كلمة المرور الافتراضية: 123)' }, { status: 401 });
     }
 
     const { password: _, ...safeUser } = user;
