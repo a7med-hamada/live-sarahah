@@ -14,7 +14,7 @@
       "liveBadgeText": "• LIVE",
       "activeOverlayMessageId": "msg_1",
       "cardCustomization": {
-        "messageFontSize": 25,
+        "messageFontSize": 30,
         "nameFontSize": 19,
         "footerFontSize": 14,
         "avatarSize": 36,
@@ -24,12 +24,17 @@
         "textAlign": "right",
         "badgeText": "رسالة من مجهولة 💌",
         "bgType": "solid",
-        "bgColor": "#0040ff",
-        "bgOpacity": 5,
+        "bgColor": "#0f1117",
+        "bgOpacity": 35,
         "messageColor": "#ffffff",
         "nameColor": "#ffffff",
         "footerColor": "#67e8f9",
-        "borderTheme": "tiktok"
+        "borderTheme": "gold",
+        "showDividers": true,
+        "dividerColor": "#334155",
+        "dividerThickness": 2,
+        "dividerOpacity": 65,
+        "blurAmount": 16
       },
       "createdAt": 1794615279890
     }

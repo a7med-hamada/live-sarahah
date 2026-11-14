@@ -39,7 +39,10 @@ import {
   Save,
   Palette,
   EyeOff,
-  SunMedium
+  SunMedium,
+  Minus,
+  Sparkle,
+  Layers
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -62,7 +65,7 @@ export default function DashboardPage() {
 
   // Card Customization state (live adjustable controls)
   const [cardConfig, setCardConfig] = useState<CardCustomization>({
-    messageFontSize: 24,
+    messageFontSize: 26,
     nameFontSize: 15,
     footerFontSize: 12,
     avatarSize: 28,
@@ -71,13 +74,18 @@ export default function DashboardPage() {
     cardHeaderName: '',
     textAlign: 'right',
     badgeText: 'رسالة مجهولة 💌',
-    bgType: 'solid',
+    bgType: 'transparent',
     bgColor: '#0f1117',
-    bgOpacity: 95,
+    bgOpacity: 0,
     messageColor: '#ffffff',
     nameColor: '#ffffff',
     footerColor: '#67e8f9',
     borderTheme: 'tiktok',
+    showDividers: true,
+    dividerColor: '#000000',
+    dividerThickness: 2,
+    dividerOpacity: 85,
+    blurAmount: 0,
   });
 
   // Profile Form state
@@ -128,7 +136,7 @@ export default function DashboardPage() {
       // Load card customization
       const userCardCfg: CardCustomization = userData.data.cardCustomization || {};
       setCardConfig({
-        messageFontSize: userCardCfg.messageFontSize ?? 24,
+        messageFontSize: userCardCfg.messageFontSize ?? 26,
         nameFontSize: userCardCfg.nameFontSize ?? 15,
         footerFontSize: userCardCfg.footerFontSize ?? 12,
         avatarSize: userCardCfg.avatarSize ?? 28,
@@ -137,13 +145,18 @@ export default function DashboardPage() {
         cardHeaderName: userCardCfg.cardHeaderName || userData.data.displayName || '',
         textAlign: userCardCfg.textAlign || 'right',
         badgeText: userCardCfg.badgeText || 'رسالة مجهولة 💌',
-        bgType: userCardCfg.bgType || 'solid',
+        bgType: userCardCfg.bgType || 'transparent',
         bgColor: userCardCfg.bgColor || '#0f1117',
-        bgOpacity: userCardCfg.bgOpacity ?? 95,
+        bgOpacity: userCardCfg.bgOpacity ?? 0,
         messageColor: userCardCfg.messageColor || '#ffffff',
         nameColor: userCardCfg.nameColor || '#ffffff',
         footerColor: userCardCfg.footerColor || '#67e8f9',
         borderTheme: userCardCfg.borderTheme || 'tiktok',
+        showDividers: userCardCfg.showDividers !== false,
+        dividerColor: userCardCfg.dividerColor || '#000000',
+        dividerThickness: userCardCfg.dividerThickness ?? 2,
+        dividerOpacity: userCardCfg.dividerOpacity ?? 85,
+        blurAmount: userCardCfg.blurAmount ?? 0,
       });
 
       setFormData({
@@ -502,10 +515,10 @@ export default function DashboardPage() {
                   <span>ربط الكارت مع TikTok Live Studio أو OBS Studio</span>
                 </div>
                 <h3 className="text-lg font-black text-white">
-                  التحكم المباشر في أحجام الكارت، الشفافية، وألوان النصوص
+                  التحكم المباشر في الخطوط الفاصلة، البلور الضبابي، وشفافية الكارت
                 </h3>
                 <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                  يمكنك جعل خلفية الكارت شفافة تماماً 100% ليظهر فوق كاميرتك مباشرة، وتعديل لون كل نص وإطار النيون بنقرة زر واحدة!
+                  يمكنك تفعيل تأثير البلور الضبابي الشفاف (Blur) خلف الكارت، والتحكم في سمك ولون الخطين الفاصلين الأسودين بدقة متناهية!
                 </p>
               </div>
 
@@ -748,10 +761,10 @@ export default function DashboardPage() {
                 <div className="space-y-1">
                   <h3 className="text-lg font-black text-white flex items-center gap-2">
                     <Sliders className="w-5 h-5 text-cyan-400" />
-                    <span>تخصيص ألوان الكارت، الشفافية، والمقاسات (مباشر على الشاشة)</span>
+                    <span>تخصيص الخطوط الفاصلة، البلور الضبابي، وشفافية الكارت</span>
                   </h3>
                   <p className="text-xs text-slate-400">
-                    تحكم بالكامل في شفافية الخلفية (Transparent)، ألوان نصوص الرسالة، ومقاسات كل عنصر بالمللي!
+                    يمكنك تفعيل البلور الضبابي الشفاف بدون ألوان، والتحكم في سمك ولون الخطين الفاصلين بدقة!
                   </p>
                 </div>
 
@@ -773,133 +786,183 @@ export default function DashboardPage() {
 
               {cardSaveSuccess && (
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs text-center font-bold animate-in fade-in">
-                  ✓ تم حفظ إعدادات وألوان وشفافية الكارت بنجاح وتم تحديث رابط الـ OBS تلقائياً!
+                  ✓ تم حفظ إعدادات الخطين، البلور، والشفافية بنجاح وتم تحديث رابط الـ OBS تلقائياً!
                 </div>
               )}
 
-              {/* SECTION A: BACKGROUND COLOR & TRANSPARENCY (الخلفية والشفافية) */}
-              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
-                <div className="flex items-center justify-between">
+              {/* NEW SECTION 1: DIVIDER LINES CONTROLS (التحكم في الخطين الفاصلين الأسودين) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <span className="text-sm font-black text-white flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-cyan-400" />
-                    <span>لون خلفية الكارت ودرجة الشفافية (Transparency):</span>
+                    <Minus className="w-4 h-4 text-rose-400" />
+                    <span>الخطان الفاصلان (أعلى وأسفل الرسالة):</span>
                   </span>
-                  <span className="text-xs font-mono font-bold text-cyan-300">
-                    {cardConfig.bgType === 'transparent' || cardConfig.bgOpacity === 0
-                      ? 'شفاف تماماً 100%'
-                      : `شفافية: ${cardConfig.bgOpacity}%`}
-                  </span>
-                </div>
 
-                {/* Quick Presets for Background Transparency */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <button
-                    onClick={() =>
-                      setCardConfig({ ...cardConfig, bgType: 'transparent', bgOpacity: 0 })
-                    }
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-                      cardConfig.bgType === 'transparent' || cardConfig.bgOpacity === 0
-                        ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-950/50'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    <EyeOff className="w-4 h-4 text-cyan-300" />
-                    <span>خلفية شفافة تماماً (100% Transparent)</span>
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      setCardConfig({ ...cardConfig, bgType: 'glass', bgOpacity: 35, bgColor: '#0f1117' })
-                    }
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-                      cardConfig.bgType === 'glass' && cardConfig.bgOpacity === 35
-                        ? 'bg-cyan-500 text-black border-cyan-400 shadow-md'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    <Sparkles className="w-4 h-4 text-purple-300" />
-                    <span>زجاجي شفاف شبه داكن (Glass 35%)</span>
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      setCardConfig({ ...cardConfig, bgType: 'solid', bgOpacity: 95, bgColor: '#0f1117' })
-                    }
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-                      cardConfig.bgType === 'solid' && (cardConfig.bgOpacity ?? 95) > 80
-                        ? 'bg-purple-600 text-white border-purple-400 shadow-md'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    <SunMedium className="w-4 h-4 text-amber-300" />
-                    <span>خلفية داكنة معتمة (Dark Solid 95%)</span>
-                  </button>
-                </div>
-
-                {/* Opacity Slider */}
-                <div className="space-y-1.5 pt-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300 font-bold">شريط تعديل الشفافية الدقيقة (0% إلى 100%):</span>
-                    <span className="font-mono text-cyan-300 font-bold">{cardConfig.bgOpacity ?? 95}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={cardConfig.bgOpacity ?? 95}
-                    onChange={(e) =>
-                      setCardConfig({
-                        ...cardConfig,
-                        bgOpacity: Number(e.target.value),
-                        bgType: Number(e.target.value) === 0 ? 'transparent' : 'solid',
-                      })
-                    }
-                    className="w-full accent-cyan-400 cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500 font-bold">
-                    <span>0% (شفاف خالص لا يظهر سوى الكلام والإطار)</span>
-                    <span>50% (شبه شفاف)</span>
-                    <span>100% (معتم تماماً)</span>
-                  </div>
-                </div>
-
-                {/* Background Base Color Picker */}
-                <div className="flex items-center gap-3 pt-2">
-                  <span className="text-xs font-bold text-slate-300">لون الخلفية الأساسي:</span>
                   <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-300">إظهار الخطين:</span>
                     <input
-                      type="color"
-                      value={cardConfig.bgColor || '#0f1117'}
-                      onChange={(e) => setCardConfig({ ...cardConfig, bgColor: e.target.value })}
-                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                      type="checkbox"
+                      checked={cardConfig.showDividers !== false}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, showDividers: e.target.checked })
+                      }
+                      className="w-5 h-5 accent-rose-500 cursor-pointer"
                     />
-                    <span className="text-xs font-mono text-slate-400">{cardConfig.bgColor || '#0f1117'}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                  {/* Divider Color */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-slate-300">لون الخطين الفاصلين:</span>
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="color"
+                        value={cardConfig.dividerColor || '#000000'}
+                        onChange={(e) =>
+                          setCardConfig({ ...cardConfig, dividerColor: e.target.value })
+                        }
+                        className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border-0"
+                      />
+                      <span className="text-xs font-mono font-bold text-white">
+                        {cardConfig.dividerColor || '#000000'}
+                      </span>
+                    </div>
+
+                    {/* Quick Swatches for Divider */}
+                    <div className="flex gap-1.5 pt-1">
+                      {[
+                        { color: '#000000', name: 'أسود كلاسيكي' },
+                        { color: '#334155', name: 'رمادي داكن' },
+                        { color: '#ffffff', name: 'أبيض' },
+                        { color: '#00f2fe', name: 'سماوي نيون' },
+                        { color: '#fe2c55', name: 'وردي نيون' },
+                      ].map((s) => (
+                        <button
+                          key={s.color}
+                          onClick={() => setCardConfig({ ...cardConfig, dividerColor: s.color })}
+                          title={s.name}
+                          style={{ backgroundColor: s.color }}
+                          className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
+                            cardConfig.dividerColor === s.color
+                              ? 'border-cyan-400 ring-2 ring-cyan-400/50 scale-110'
+                              : 'border-slate-700'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Preset color circles */}
-                  <div className="flex items-center gap-1.5 mr-auto">
-                    {[
-                      { name: 'أسود فحمي', color: '#0f1117' },
-                      { name: 'أزرق ليلي', color: '#0a101f' },
-                      { name: 'بنفسجي داكن', color: '#160a22' },
-                      { name: 'رمادي داكن', color: '#1c1f26' },
-                    ].map((c) => (
-                      <button
-                        key={c.color}
-                        onClick={() => setCardConfig({ ...cardConfig, bgColor: c.color })}
-                        title={c.name}
-                        style={{ backgroundColor: c.color }}
-                        className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
-                          cardConfig.bgColor === c.color ? 'border-cyan-400 scale-110' : 'border-slate-700'
-                        }`}
-                      />
-                    ))}
+                  {/* Divider Thickness */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-slate-300">سمك الخط (Thickness):</span>
+                      <span className="font-mono text-cyan-300 font-bold">
+                        {cardConfig.dividerThickness || 2}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="6"
+                      step="0.5"
+                      value={cardConfig.dividerThickness || 2}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, dividerThickness: Number(e.target.value) })
+                      }
+                      className="w-full accent-cyan-400 cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-500 font-bold">
+                      <span>1px (نحيف)</span>
+                      <span>3px (متوسط)</span>
+                      <span>6px (عريض)</span>
+                    </div>
+                  </div>
+
+                  {/* Divider Opacity */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-slate-300">وضوح/شفافية الخط:</span>
+                      <span className="font-mono text-cyan-300 font-bold">
+                        {cardConfig.dividerOpacity ?? 85}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      step="5"
+                      value={cardConfig.dividerOpacity ?? 85}
+                      onChange={(e) =>
+                        setCardConfig({ ...cardConfig, dividerOpacity: Number(e.target.value) })
+                      }
+                      className="w-full accent-cyan-400 cursor-pointer"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* SECTION B: TEXT COLORS (ألوان نصوص الرسالة والاسم والفوتر) */}
+              {/* NEW SECTION 2: PURE TRANSPARENT BACKDROP BLUR (البلور الضبابي الشفاف) */}
+              <div className="p-5 rounded-2xl bg-[#141724] border border-cyan-500/20 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                    <span>تأثير البلور الضبابي داخل البوكس (Backdrop Blur):</span>
+                  </span>
+                  <span className="text-xs font-mono font-bold text-cyan-300">
+                    {cardConfig.blurAmount && cardConfig.blurAmount > 0
+                      ? `${cardConfig.blurAmount}px بلور سينمائي`
+                      : 'بدون بلور (0px)'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  الخلفية تظل شفافة تماماً بدون أي ألوان، ولكن هذا الخيار يضبب الكاميرا والفيديو خلف البوكس بأسلوب سينمائي مريح للعين!
+                </p>
+
+                {/* Quick Blur Presets */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {[
+                    { label: 'بدون بلور (شفاف خالص)', px: 0 },
+                    { label: 'بلور خفيف (8px)', px: 8 },
+                    { label: 'بلور سينمائي (16px)', px: 16 },
+                    { label: 'بلور قوي جداً (26px)', px: 26 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.px}
+                      onClick={() => setCardConfig({ ...cardConfig, blurAmount: preset.px })}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        (cardConfig.blurAmount || 0) === preset.px
+                          ? 'bg-cyan-500 text-black border-cyan-400 shadow-md font-black'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Blur Slider */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-300 font-bold">شريط درجة البلور الدقيقة (0px إلى 30px):</span>
+                    <span className="font-mono text-cyan-300 font-bold">{cardConfig.blurAmount || 0}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="30"
+                    step="1"
+                    value={cardConfig.blurAmount || 0}
+                    onChange={(e) =>
+                      setCardConfig({ ...cardConfig, blurAmount: Number(e.target.value) })
+                    }
+                    className="w-full accent-cyan-400 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 3: TEXT COLORS (ألوان النصوص) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {/* 1. Message Text Color */}
                 <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
@@ -920,7 +983,6 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* Palette Swatches */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {[
                       { color: '#ffffff', name: 'أبيض ناصع' },
@@ -962,7 +1024,6 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* Swatches */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {[
                       { color: '#ffffff', name: 'أبيض' },
@@ -1003,7 +1064,6 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* Swatches */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {[
                       { color: '#67e8f9', name: 'سماوي' },
@@ -1026,42 +1086,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* SECTION C: NEON BORDER THEME (ثيم إطار النيون للكارت) */}
-              <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <SunMedium className="w-4 h-4 text-amber-400" />
-                  <span>ثيم إطار النيون المتوهج للكارت:</span>
-                </span>
-
-                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
-                  {[
-                    { id: 'tiktok', name: 'تيك توك نيون', desc: 'سماوي وفوشيا', bg: 'linear-gradient(135deg, #00f2fe, #fe2c55)' },
-                    { id: 'cyan', name: 'سماوي نقي', desc: 'أزرق سماوي', bg: 'linear-gradient(135deg, #00f2fe, #3b82f6)' },
-                    { id: 'purple', name: 'بنفسجي نيون', desc: 'موف ووردي', bg: 'linear-gradient(135deg, #c084fc, #ec4899)' },
-                    { id: 'gold', name: 'ذهبي فخم', desc: 'عسلي ملكي', bg: 'linear-gradient(135deg, #f59e0b, #fbbf24)' },
-                    { id: 'neonGreen', name: 'أخضر فسفوري', desc: 'ليموني وزمردي', bg: 'linear-gradient(135deg, #10b981, #a3e635)' },
-                    { id: 'transparent', name: 'بدون إطار', desc: 'إطار مخفي', bg: '#1f2937' },
-                  ].map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => setCardConfig({ ...cardConfig, borderTheme: theme.id as any })}
-                      className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
-                        cardConfig.borderTheme === theme.id
-                          ? 'border-cyan-400 bg-slate-800/90 shadow-md ring-1 ring-cyan-400'
-                          : 'border-slate-700 bg-slate-900/60 hover:bg-slate-800'
-                      }`}
-                    >
-                      <div
-                        style={{ background: theme.bg }}
-                        className="w-full h-3 rounded-full"
-                      />
-                      <span className="text-xs font-bold text-white">{theme.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* SECTION D: FONT SIZES & ALIGNMENT (المقاسات والمحاذاة) */}
+              {/* SECTION 4: FONT SIZES & ALIGNMENT */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 border-t border-slate-800">
                 {/* 1. Message Font Size & Alignment */}
                 <div className="p-4 rounded-2xl bg-[#141724] border border-slate-800 space-y-3">
@@ -1071,7 +1096,7 @@ export default function DashboardPage() {
                       <span>حجم خط نص الرسالة:</span>
                     </span>
                     <span className="px-2 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 font-mono text-xs font-bold">
-                      {cardConfig.messageFontSize || 24}px
+                      {cardConfig.messageFontSize || 26}px
                     </span>
                   </div>
 
@@ -1080,14 +1105,13 @@ export default function DashboardPage() {
                     min="14"
                     max="42"
                     step="1"
-                    value={cardConfig.messageFontSize || 24}
+                    value={cardConfig.messageFontSize || 26}
                     onChange={(e) =>
                       setCardConfig({ ...cardConfig, messageFontSize: Number(e.target.value) })
                     }
                     className="w-full accent-cyan-400 cursor-pointer"
                   />
 
-                  {/* Quick Presets */}
                   <div className="flex items-center gap-1.5 pt-1">
                     {[
                       { label: 'صغير', size: 18 },
@@ -1109,7 +1133,6 @@ export default function DashboardPage() {
                     ))}
                   </div>
 
-                  {/* Text Alignment */}
                   <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
                     <span className="text-[11px] font-bold text-slate-300">محاذاة نص الرسالة:</span>
                     <div className="flex items-center gap-2">
@@ -1286,7 +1309,7 @@ export default function DashboardPage() {
                   className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-purple-500 to-rose-500 hover:opacity-95 text-white font-black text-sm shadow-xl shadow-cyan-950/40 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  <span>حفظ جميع التعديلات والألوان للايف والـ OBS</span>
+                  <span>حفظ جميع التعديلات والخطوط والبلور للايف والـ OBS</span>
                 </button>
               </div>
             </div>

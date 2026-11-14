@@ -13,13 +13,13 @@ interface LiveCardProps {
 }
 
 function hexToRgba(hex: string, opacity: number = 100): string {
-  if (!hex) return `rgba(15, 17, 23, ${opacity / 100})`;
+  if (!hex) return `rgba(0, 0, 0, ${opacity / 100})`;
   let c = hex.replace('#', '');
   if (c.length === 3) {
     c = c.split('').map((x) => x + x).join('');
   }
   const num = parseInt(c, 16);
-  if (isNaN(num)) return `rgba(15, 17, 23, ${opacity / 100})`;
+  if (isNaN(num)) return `rgba(0, 0, 0, ${opacity / 100})`;
   const r = (num >> 16) & 255;
   const g = (num >> 8) & 255;
   const b = num & 255;
@@ -50,6 +50,11 @@ export default function LiveCard({
     nameColor: '#ffffff',
     footerColor: '#67e8f9',
     borderTheme: 'tiktok',
+    showDividers: true,
+    dividerColor: '#000000',
+    dividerThickness: 2,
+    dividerOpacity: 85,
+    blurAmount: 0,
     ...user.cardCustomization,
     ...customization,
   };
@@ -79,18 +84,32 @@ export default function LiveCard({
     borderGlow = 'none';
   }
 
-  const isTransparent = cardConfig.bgType === 'transparent' || cardConfig.bgOpacity === 0;
+  const isTransparent = cardConfig.bgType === 'transparent' || (cardConfig.bgOpacity ?? 0) === 0;
 
   // Determine inner background
   let cardBg = 'transparent';
-  let cardBackdrop = 'none';
-
   if (!isTransparent) {
     cardBg = hexToRgba(cardConfig.bgColor || '#0f1117', cardConfig.bgOpacity ?? 90);
-    if ((cardConfig.bgOpacity ?? 90) < 90 && (cardConfig.bgOpacity ?? 90) > 0) {
-      cardBackdrop = 'blur(10px)';
-    }
   }
+
+  // Pure Transparent Blur: applies blur over camera behind it even if cardBg is transparent!
+  const cardBackdrop =
+    cardConfig.blurAmount && cardConfig.blurAmount > 0
+      ? `blur(${cardConfig.blurAmount}px)`
+      : 'none';
+
+  // Divider Line style (color & thickness)
+  const dividerStyle: React.CSSProperties = {
+    height: `${cardConfig.dividerThickness || 2}px`,
+    backgroundColor: hexToRgba(
+      cardConfig.dividerColor || '#000000',
+      cardConfig.dividerOpacity ?? 85
+    ),
+    boxShadow:
+      cardConfig.dividerColor === '#000000'
+        ? '0 1px 3px rgba(0,0,0,0.5)'
+        : `0 0 8px ${hexToRgba(cardConfig.dividerColor || '#000000', 50)}`,
+  };
 
   // Alignment classes
   const alignClass =
@@ -140,10 +159,10 @@ export default function LiveCard({
           '--border-glow': borderGlow,
         } as React.CSSProperties
       }
-      className={`neon-hollow-border max-w-xl w-full mx-auto p-5 sm:p-6 space-y-4 transition-all ${className}`}
+      className={`neon-hollow-border max-w-xl w-full mx-auto p-5 sm:p-6 space-y-3 transition-all ${className}`}
     >
       {/* 1. Card Header */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/15 pb-3">
+      <div className="relative z-10 flex items-center justify-between pb-1">
         {/* Badge */}
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-rose-600/95 to-pink-600/95 text-white text-xs font-bold shadow-lg shadow-pink-950/60">
           <span>{cardConfig.badgeText || 'رسالة مجهولة 💌'}</span>
@@ -185,8 +204,16 @@ export default function LiveCard({
         </div>
       </div>
 
-      {/* 2. Message Content */}
-      <div className={`relative z-10 py-3 px-2 min-h-[70px] flex items-center ${alignClass}`}>
+      {/* 2. Top Divider Line (الخط الفاصل العلوي) */}
+      {cardConfig.showDividers !== false && (
+        <div
+          style={dividerStyle}
+          className="relative z-10 w-full rounded-full transition-all"
+        />
+      )}
+
+      {/* 3. Message Content */}
+      <div className={`relative z-10 py-2.5 px-2 min-h-[65px] flex items-center ${alignClass}`}>
         <p
           style={{
             fontSize: `${cardConfig.messageFontSize || 26}px`,
@@ -205,9 +232,17 @@ export default function LiveCard({
         </p>
       </div>
 
-      {/* 3. Card Footer - FULLY INSIDE THE BORDER */}
+      {/* 4. Bottom Divider Line (الخط الفاصل السفلي) */}
+      {cardConfig.showDividers !== false && showFooter && (
+        <div
+          style={dividerStyle}
+          className="relative z-10 w-full rounded-full transition-all"
+        />
+      )}
+
+      {/* 5. Card Footer - FULLY INSIDE THE BORDER */}
       {showFooter && (
-        <div className="relative z-10 pt-2 border-t border-white/15 flex items-center justify-between text-slate-400">
+        <div className="relative z-10 pt-1 flex items-center justify-between text-slate-400">
           <div
             style={{
               fontSize: `${cardConfig.footerFontSize || 12}px`,
