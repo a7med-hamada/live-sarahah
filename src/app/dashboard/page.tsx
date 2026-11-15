@@ -75,6 +75,7 @@ export default function DashboardPage() {
   const [savingCardConfig, setSavingCardConfig] = useState(false);
   const [cardSaveSuccess, setCardSaveSuccess] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread' | 'pinned'>('all');
+  const [inboxSortOrder, setInboxSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
@@ -514,11 +515,13 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredMessages = messages.filter((m) => {
-    if (filter === 'unread') return !m.isRead;
-    if (filter === 'pinned') return m.isPinned;
-    return true;
-  });
+  const filteredMessages = messages
+    .filter((m) => {
+      if (filter === 'unread') return !m.isRead;
+      if (filter === 'pinned') return m.isPinned;
+      return true;
+    })
+    .sort((a, b) => (inboxSortOrder === 'asc' ? a.createdAt - b.createdAt : b.createdAt - a.createdAt));
 
   if (isLoading) {
     return (
@@ -952,27 +955,27 @@ export default function DashboardPage() {
             {/* Quick Cycle & Navigation Controls */}
             {messages.length > 0 && (() => {
               const currentMsgIndex = messages.findIndex((m) => m.id === activeOverlayMsgId);
-              const isAtOldest = currentMsgIndex >= messages.length - 1;
-              const isAtNewest = currentMsgIndex <= 0 && currentMsgIndex !== -1;
+              const isAtFirst = currentMsgIndex <= 0 && currentMsgIndex !== -1;
+              const isAtLast = currentMsgIndex >= messages.length - 1 && currentMsgIndex !== -1;
 
-              const handleNavOlder = () => {
-                if (isAtOldest) {
-                  setNavAlertMsg('🛑 هذه هي آخر وأقدم رسالة! لا توجد رسائل أخرى بعدها، وتم التثبيت على نفس الرسالة.');
+              const handleNavPrev = () => {
+                if (isAtFirst) {
+                  setNavAlertMsg('🛑 هذه هي أول رسالة تم إرسالها! لا توجد رسائل سابقة.');
+                  setTimeout(() => setNavAlertMsg(''), 4500);
+                  return;
+                }
+                const prevIdx = currentMsgIndex > 0 ? currentMsgIndex - 1 : 0;
+                setNavAlertMsg('');
+                handleSetOverlayMsg(messages[prevIdx].id);
+              };
+
+              const handleNavNext = () => {
+                if (isAtLast) {
+                  setNavAlertMsg('🛑 وصلت لآخر رسالة! لا توجد رسائل أخرى بعدها، وتم التثبيت على نفس الرسالة.');
                   setTimeout(() => setNavAlertMsg(''), 4500);
                   return;
                 }
                 const nextIdx = currentMsgIndex !== -1 ? currentMsgIndex + 1 : 0;
-                setNavAlertMsg('');
-                handleSetOverlayMsg(messages[nextIdx].id);
-              };
-
-              const handleNavNewer = () => {
-                if (isAtNewest) {
-                  setNavAlertMsg('🛑 هذه هي أحدث وأول رسالة معروضة! لا توجد رسائل أحدث منها.');
-                  setTimeout(() => setNavAlertMsg(''), 4500);
-                  return;
-                }
-                const nextIdx = currentMsgIndex > 0 ? currentMsgIndex - 1 : 0;
                 setNavAlertMsg('');
                 handleSetOverlayMsg(messages[nextIdx].id);
               };
@@ -988,22 +991,23 @@ export default function DashboardPage() {
                   )}
 
                   <div className="flex flex-wrap items-center justify-center gap-2.5">
-                    {/* Older Message */}
+                    {/* Previous Message (Towards the first message) */}
                     <button
                       type="button"
-                      onClick={handleNavOlder}
+                      onClick={handleNavPrev}
                       className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        isAtOldest
-                          ? 'bg-slate-900/60 border-amber-500/30 text-amber-300/80'
+                        isAtFirst
+                          ? 'bg-slate-900/60 border-slate-700 text-slate-500 cursor-not-allowed'
                           : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
                       }`}
-                      title={isAtOldest ? 'وصلت لآخر رسالة' : 'الانتقال للرسالة السابقة'}
+                      title={isAtFirst ? 'أنت في أول رسالة' : 'الانتقال للرسالة السابقة'}
+                      disabled={isAtFirst}
                     >
                       <ChevronRight className="w-4 h-4" />
-                      <span>الرسالة الأقدم (السابقة)</span>
-                      {isAtOldest && (
-                        <span className="px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-black mr-1">
-                          (النهاية 🏁)
+                      <span>الرسالة السابقة</span>
+                      {isAtFirst && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] font-black mr-1">
+                          (البداية 🏁)
                         </span>
                       )}
                     </button>
@@ -1016,7 +1020,7 @@ export default function DashboardPage() {
                       </span>
                       <span>من</span>
                       <span className="font-mono text-sm">{messages.length}</span>
-                      {isAtOldest && messages.length > 0 && (
+                      {isAtLast && messages.length > 0 && (
                         <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-black mr-1">
                           🏁 آخر رسالة
                         </span>
@@ -1044,21 +1048,22 @@ export default function DashboardPage() {
                       </button>
                     )}
 
-                    {/* Newer Message */}
+                    {/* Next Message (Advance forward in order) */}
                     <button
                       type="button"
-                      onClick={handleNavNewer}
+                      onClick={handleNavNext}
                       className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        isAtNewest
-                          ? 'bg-slate-900/60 border-cyan-500/30 text-cyan-300/80'
-                          : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                        isAtLast
+                          ? 'bg-slate-900/60 border-amber-500/30 text-amber-300/80 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white border-cyan-400 shadow-md shadow-cyan-950/40'
                       }`}
-                      title={isAtNewest ? 'وصلت لأحدث رسالة' : 'الانتقال للرسالة التالية'}
+                      title={isAtLast ? 'وصلت لآخر رسالة' : 'الانتقال للرسالة التالية في الطابور'}
+                      disabled={isAtLast}
                     >
-                      <span>الرسالة الأحدث (التالية)</span>
-                      {isAtNewest && (
-                        <span className="px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] font-black ml-1">
-                          (الأحدث)
+                      <span>الرسالة التالية ⏭️</span>
+                      {isAtLast && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-black ml-1">
+                          (النهاية)
                         </span>
                       )}
                       <ChevronLeft className="w-4 h-4" />
@@ -2407,7 +2412,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             {/* Inbox Controls & Filter */}
             <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#0f1117] border border-slate-800">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold text-slate-400">تصفية:</span>
                 <button
                   onClick={() => setFilter('all')}
@@ -2429,6 +2434,34 @@ export default function DashboardPage() {
                 >
                   المثبتة ({messages.filter((m) => m.isPinned).length})
                 </button>
+
+                <div className="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block"></div>
+
+                <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                  <span className="text-[11px] font-bold text-slate-400 px-1">الترتيب:</span>
+                  <button
+                    onClick={() => setInboxSortOrder('asc')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      inboxSortOrder === 'asc'
+                        ? 'bg-cyan-500 text-black shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="الرسائل التي كُتبت أولاً تظهر أولاً (ترتيب زمني طبيعي)"
+                  >
+                    الأول بالأول ⏱️ (افتراضي)
+                  </button>
+                  <button
+                    onClick={() => setInboxSortOrder('desc')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      inboxSortOrder === 'desc'
+                        ? 'bg-cyan-500 text-black shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="أحدث رسالة تظهر أولاً"
+                  >
+                    الأحدث أولاً ⚡
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
@@ -2469,7 +2502,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredMessages.map((msg) => {
+                {filteredMessages.map((msg, index) => {
                   const isOnScreen = activeOverlayMsgId === msg.id;
 
                   return (
@@ -2484,6 +2517,9 @@ export default function DashboardPage() {
                       {/* Message Header */}
                       <div className="flex items-center justify-between text-xs text-slate-400">
                         <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono font-bold text-[10px] border border-cyan-500/30">
+                            #{index + 1}
+                          </span>
                           <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold text-[10px]">
                             مجهول 💌
                           </span>

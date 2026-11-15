@@ -200,7 +200,7 @@ export const Storage = {
     const clean = username.toLowerCase().trim();
     return db.messages
       .filter((m) => m.recipientUsername.toLowerCase() === clean)
-      .sort((a, b) => b.createdAt - a.createdAt);
+      .sort((a, b) => a.createdAt - b.createdAt); // Chronological order: First written appears first!
   },
 
   getMessageById(messageId: string): AnonymousMessage | null {
@@ -220,7 +220,7 @@ export const Storage = {
       isPinned: false,
       isArchived: false,
     };
-    db.messages.unshift(newMessage);
+    db.messages.push(newMessage);
     saveDb(db);
     return newMessage;
   },
