@@ -52,6 +52,9 @@ import {
   Wand2,
   Lock,
   KeyRound,
+  Timer,
+  Pause,
+  Hourglass,
 } from 'lucide-react';
 import Link from 'next/link';
 import { playSound, SOUND_PRESETS, SoundTheme } from '@/lib/sounds';
@@ -114,6 +117,12 @@ export default function DashboardPage() {
   });
 
   const [titleEffectCategory, setTitleEffectCategory] = useState<string>('all');
+
+  // Auto-Slide Carousel State (مؤقت التبديل التلقائي)
+  const [autoSlideActive, setAutoSlideActive] = useState<boolean>(false);
+  const [autoSlideSeconds, setAutoSlideSeconds] = useState<number>(15);
+  const [autoSlideCountdown, setAutoSlideCountdown] = useState<number>(15);
+  const [autoSlidePausedAtEnd, setAutoSlidePausedAtEnd] = useState<boolean>(false);
 
   // Profile Form state
   const [formData, setFormData] = useState({
@@ -217,6 +226,33 @@ export default function DashboardPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-Slide Carousel Timer Effect
+  useEffect(() => {
+    if (!autoSlideActive || messages.length === 0) return;
+
+    const timer = setInterval(() => {
+      setAutoSlideCountdown((prev) => {
+        if (prev <= 1) {
+          // Time to switch to next message
+          const currentIdx = messages.findIndex((m) => m.id === activeOverlayMsgId);
+          if (currentIdx >= messages.length - 1) {
+            // Reached the last message! Hold and stop without looping
+            setAutoSlidePausedAtEnd(true);
+            return autoSlideSeconds;
+          } else {
+            const nextIdx = currentIdx !== -1 ? currentIdx + 1 : 0;
+            setAutoSlidePausedAtEnd(false);
+            handleSetOverlayMsg(messages[nextIdx].id);
+            return autoSlideSeconds;
+          }
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [autoSlideActive, autoSlideSeconds, messages, activeOverlayMsgId]);
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
@@ -949,6 +985,145 @@ export default function DashboardPage() {
                 </div>
               );
             })()}
+
+            {/* AUTO-SLIDE CAROUSEL MODE (مؤقت التبديل التلقائي للرسائل في البث) */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-[#141724] border border-cyan-500/30 shadow-2xl space-y-4">
+              <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-3">
+                <div className="space-y-0.5">
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <Timer className="w-5 h-5 text-cyan-400" />
+                    <span>مؤقت التبديل التلقائي للرسائل (Auto-Slide Carousel Mode)</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    يقوم بتقليب الرسائل المعروضة على شاشة البث (OBS) تلقائياً بالثواني التي تحددها، دون أن تضطر للنقر بيدك أثناء اللعب!
+                  </p>
+                </div>
+
+                {/* Main Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (autoSlideActive) {
+                      setAutoSlideActive(false);
+                      setAutoSlidePausedAtEnd(false);
+                    } else {
+                      setAutoSlideActive(true);
+                      setAutoSlideCountdown(autoSlideSeconds);
+                      setAutoSlidePausedAtEnd(false);
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-xs transition-all cursor-pointer shadow-lg ${
+                    autoSlideActive
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 hover:bg-rose-500/30 shadow-rose-950/40'
+                      : 'bg-gradient-to-r from-cyan-500 via-purple-600 to-pink-500 hover:opacity-95 text-white shadow-cyan-950/50'
+                  }`}
+                >
+                  {autoSlideActive ? (
+                    <>
+                      <Pause className="w-4 h-4 fill-current" />
+                      <span>إيقاف المؤقت التلقائي ⏸️</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>تشغيل المؤقت التلقائي ⏯️</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Active Countdown & Progress Bar */}
+              {autoSlideActive && (
+                <div className="space-y-2 p-3.5 rounded-2xl bg-black/60 border border-cyan-500/30">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+                      <span className="text-white">المؤقت يعمل الآن في البث المباشر</span>
+                    </div>
+
+                    {!autoSlidePausedAtEnd ? (
+                      <span className="text-cyan-300 font-mono flex items-center gap-1">
+                        <Hourglass className="w-3.5 h-3.5 animate-spin" />
+                        <span>التبديل بعد: {autoSlideCountdown} ثانية</span>
+                      </span>
+                    ) : (
+                      <span className="text-amber-400 font-bold">
+                        🏁 متوقف مؤقتاً عند آخر رسالة
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Progress Bar */}
+                  {!autoSlidePausedAtEnd ? (
+                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-400 to-pink-500 transition-all duration-1000 ease-linear rounded-full"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(
+                              0,
+                              ((autoSlideSeconds - autoSlideCountdown) / autoSlideSeconds) * 100
+                            )
+                          )}%`,
+                        }}
+                      ></div>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold text-center">
+                      🏁 تم عرض جميع الرسائل حتى النهاية! المؤقت ثابت على آخر رسالة ولن يكرر من البداية، وبمجرد وصول رسالة جديدة من المشاهدين سيبدأ بالتبديل تلقائياً.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Timing Controls (Slider + Presets) */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-300">سرعة التقليب (مدة بقاء كل رسالة على الشاشة):</span>
+                  <span className="px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 font-mono text-sm font-black">
+                    {autoSlideSeconds} ثانية
+                  </span>
+                </div>
+
+                {/* Range Slider */}
+                <input
+                  type="range"
+                  min="5"
+                  max="60"
+                  step="1"
+                  value={autoSlideSeconds}
+                  onChange={(e) => {
+                    const sec = Number(e.target.value);
+                    setAutoSlideSeconds(sec);
+                    setAutoSlideCountdown(sec);
+                  }}
+                  className="w-full accent-cyan-400 cursor-pointer"
+                />
+
+                {/* Quick Presets Buttons */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] text-slate-400 font-bold">أوقات سريعة:</span>
+                  {[5, 10, 15, 20, 30, 45, 60].map((sec) => (
+                    <button
+                      key={sec}
+                      type="button"
+                      onClick={() => {
+                        setAutoSlideSeconds(sec);
+                        setAutoSlideCountdown(sec);
+                      }}
+                      className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                        autoSlideSeconds === sec
+                          ? 'bg-gradient-to-r from-cyan-500 to-pink-500 text-white shadow-md'
+                          : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700'
+                      }`}
+                    >
+                      {sec} ثانية
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             {/* DEDICATED VISUAL SIZES, COLORS & TRANSPARENCY CUSTOMIZATION PANEL */}
             <div className="p-6 sm:p-7 rounded-3xl bg-[#0f1118] border border-cyan-500/30 shadow-2xl space-y-6">

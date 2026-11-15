@@ -44,6 +44,10 @@ export interface CardCustomization {
 
   // Title 3D & Visual Effects (30 تأثير خرافي للاسم الكبير والتايتل)
   titleEffect?: string; // e.g. 'tiktokClassic', 'goldLuxury', etc.
+
+  // Auto-Slide Carousel Mode (مؤقت التبديل التلقائي الذكي للرسائل)
+  autoSlideEnabled?: boolean; // default false
+  autoSlideInterval?: number; // seconds (e.g. 15s)
 }
 
 export interface UserProfile {
