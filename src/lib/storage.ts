@@ -245,6 +245,17 @@ export const Storage = {
     return false;
   },
 
+  deleteAllMessagesForUser(username: string): boolean {
+    const db = initDb();
+    const clean = username.toLowerCase().trim();
+    db.messages = db.messages.filter((m) => m.recipientUsername.toLowerCase() !== clean);
+    if (db.users[clean]) {
+      db.users[clean].activeOverlayMessageId = null;
+    }
+    saveDb(db);
+    return true;
+  },
+
   setActiveOverlayMessage(username: string, messageId: string | null): boolean {
     const db = initDb();
     const clean = username.toLowerCase().trim();

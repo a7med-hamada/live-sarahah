@@ -76,6 +76,8 @@ export default function DashboardPage() {
   const [cardSaveSuccess, setCardSaveSuccess] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread' | 'pinned'>('all');
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const [previewBg, setPreviewBg] = useState<'camera' | 'game' | 'grid'>('camera');
   const [previewAnimKey, setPreviewAnimKey] = useState<number>(0);
@@ -193,6 +195,11 @@ export default function DashboardPage() {
       const msgRes = await fetch(`/api/messages?username=${username}`, {
         headers: getAuthHeaders(),
       });
+      if (msgRes.status === 401) {
+        localStorage.removeItem('sessionToken');
+        router.push('/login');
+        return;
+      }
       const msgData = await msgRes.json();
       if (msgData.success) {
         setMessages(msgData.data);
@@ -216,9 +223,15 @@ export default function DashboardPage() {
         fetch(`/api/messages?username=${savedUser}`, {
           headers: getAuthHeaders(),
         })
-          .then((r) => r.json())
+          .then((r) => {
+            if (r.status === 401) {
+              console.warn('Session expired or unauthorized');
+              return null;
+            }
+            return r.json();
+          })
           .then((d) => {
-            if (d.success) setMessages(d.data);
+            if (d && d.success) setMessages(d.data);
           })
           .catch(() => {});
       }
@@ -332,6 +345,30 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeleteAllMessages = async () => {
+    if (!currentUser) return;
+    setIsDeletingAll(true);
+    try {
+      const res = await fetch(`/api/messages?username=${currentUser.username}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessages([]);
+        setActiveOverlayMsgId(null);
+        setShowDeleteAllModal(false);
+      } else {
+        alert(data.error || 'تعذر مسح الرسائل');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء محاولة مسح الرسائل');
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -506,6 +543,51 @@ export default function DashboardPage() {
         obsUrl={currentObsUrl}
         publicUrl={currentPublicUrl}
       />
+
+      {/* Confirmation Modal for Delete All Messages */}
+      {showDeleteAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-[#0f1117] border border-rose-500/40 shadow-2xl shadow-rose-950/60 space-y-5 text-right font-sans">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 mx-auto">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-black text-white">تأكيد مسح جميع الرسائل ⚠️</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                هل أنت متأكد من رغبتك في حذف <span className="text-rose-400 font-bold">كافة الرسائل ({messages.length} رسالة)</span> من صندوق الوارد؟
+              </p>
+              <p className="text-xs text-rose-400/90 bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20 font-medium">
+                تنبيه: هذا الإجراء نهائي ولا يمكن التراجع عنه، وسيتم تفريغ الصندوق وشاشة اللايف بالكامل.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={handleDeleteAllMessages}
+                disabled={isDeletingAll}
+                className="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-sm transition-all shadow-lg shadow-rose-900/40 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingAll ? (
+                  <span>جاري المسح...</span>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>نعم، مسح الكل الآن</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                disabled={isDeletingAll}
+                className="py-3 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-[#0d0f15]/90 border-b border-slate-800/80 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
@@ -2349,8 +2431,18 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowDeleteAllModal(true)}
+                  disabled={messages.length === 0}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                  title="مسح كافة الرسائل الواردة"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>مسح الكل ({messages.length})</span>
+                </button>
+
+                <div className="flex items-center gap-1.5 text-xs text-slate-400">
                   <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                   <span>تحديث تلقائي حي مفعل</span>
                 </div>

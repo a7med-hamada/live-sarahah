@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (existing) {
       // If user exists and entered their matching password, log them in seamlessly!
       if (existing.password && verifyPassword(password, existing.password)) {
-        const sessionToken = generateSessionToken();
+        const sessionToken = generateSessionToken(cleanUsername);
         const sessionExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
         Storage.updateUserProfile(cleanUsername, { sessionToken, sessionExpiresAt });
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     const securePasswordHash = hashPassword(password);
-    const sessionToken = generateSessionToken();
+    const sessionToken = generateSessionToken(cleanUsername);
     const sessionExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
     const newUser: UserProfile = {

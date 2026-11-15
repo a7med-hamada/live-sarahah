@@ -19,6 +19,14 @@ export async function GET(
       activeMessage = Storage.getMessageById(user.activeOverlayMessageId);
     }
 
+    // If no active message set, automatically show the newest message
+    if (!activeMessage) {
+      const userMessages = Storage.getMessagesForUser(username);
+      if (userMessages.length > 0) {
+        activeMessage = userMessages[0];
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {

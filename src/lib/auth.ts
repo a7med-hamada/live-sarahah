@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { Storage } from './storage';
 import { UserProfile } from './types';
+import { verifySignedSessionToken } from './security';
 
 export interface AuthResult {
   authenticated: boolean;
@@ -49,29 +50,36 @@ export function authenticateRequest(
     };
   }
 
+  // 1. Fast cryptographic stateless verification (works across all Vercel lambdas)
+  const signedCheck = verifySignedSessionToken(token, targetUsername);
+  if (signedCheck.valid && signedCheck.username) {
+    const user = Storage.getUserByUsername(signedCheck.username);
+    return { authenticated: true, user };
+  }
+
+  // 2. Fallback to stateful user check (for legacy tokens)
   if (targetUsername) {
     const user = Storage.getUserByUsername(targetUsername);
     if (!user) {
       return { authenticated: false, user: null, error: 'المستخدم غير موجود' };
     }
 
-    if (!user.sessionToken || user.sessionToken !== token) {
-      return {
-        authenticated: false,
-        user: null,
-        error: 'جلسة الدخول غير صالحة أو منتهية، يرجى تسجيل الدخول مرة أخرى',
-      };
+    if (user.sessionToken && user.sessionToken === token) {
+      if (user.sessionExpiresAt && Date.now() > user.sessionExpiresAt) {
+        return {
+          authenticated: false,
+          user: null,
+          error: 'انتهت صلاحية جلسة الدخول، يرجى تسجيل الدخول مجدداً',
+        };
+      }
+      return { authenticated: true, user };
     }
 
-    if (user.sessionExpiresAt && Date.now() > user.sessionExpiresAt) {
-      return {
-        authenticated: false,
-        user: null,
-        error: 'انتهت صلاحية جلسة الدخول، يرجى تسجيل الدخول مجدداً',
-      };
-    }
-
-    return { authenticated: true, user };
+    return {
+      authenticated: false,
+      user: null,
+      error: 'جلسة الدخول غير صالحة أو منتهية، يرجى تسجيل الدخول مرة أخرى',
+    };
   }
 
   // Look up user by token across all users

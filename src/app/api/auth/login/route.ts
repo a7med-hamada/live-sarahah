@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'كلمة المرور غير صحيحة' }, { status: 401 });
     }
 
-    // Generate secure session token (valid for 30 days)
-    const sessionToken = generateSessionToken();
+    // Generate secure stateless signed session token (valid for 30 days across all lambdas)
+    const sessionToken = generateSessionToken(clean);
     const sessionExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
     Storage.updateUserProfile(clean, {

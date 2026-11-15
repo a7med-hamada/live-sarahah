@@ -91,3 +91,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const username = searchParams.get('username');
+
+    if (!username) {
+      return NextResponse.json({ success: false, error: 'اسم المستخدم مطلوب' }, { status: 400 });
+    }
+
+    // High security check: Only the account owner can delete all their messages
+    const auth = authenticateRequest(request, username);
+    if (!auth.authenticated) {
+      return NextResponse.json(
+        { success: false, error: auth.error || 'غير مصرح بحذف الرسائل' },
+        { status: 401 }
+      );
+    }
+
+    Storage.deleteAllMessagesForUser(username);
+    return NextResponse.json({ success: true, message: 'تم مسح جميع الرسائل بنجاح' });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
