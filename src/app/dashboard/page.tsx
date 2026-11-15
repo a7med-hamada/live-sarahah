@@ -76,6 +76,7 @@ export default function DashboardPage() {
 
   const [previewBg, setPreviewBg] = useState<'camera' | 'game' | 'grid'>('camera');
   const [previewAnimKey, setPreviewAnimKey] = useState<number>(0);
+  const [navAlertMsg, setNavAlertMsg] = useState<string>('');
 
   // Card Customization state (live adjustable controls)
   const [cardConfig, setCardConfig] = useState<CardCustomization>({
@@ -429,7 +430,8 @@ export default function DashboardPage() {
     if (skipOffset + 1 < newerMessages.length) {
       setSkipOffset((prev) => prev + 1);
     } else {
-      alert('لا توجد رسائل أخرى في الانتظار لتخطيها حالياً');
+      setNavAlertMsg('🛑 وصلت لآخر رسالة في الانتظار! لا توجد رسائل أخرى لتخطيها حالياً.');
+      setTimeout(() => setNavAlertMsg(''), 4000);
     }
   };
 
@@ -830,50 +832,123 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Cycle & Navigation Controls */}
-            {messages.length > 0 && (
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <button
-                  onClick={() => {
-                    const currentIdx = messages.findIndex((m) => m.id === activeOverlayMsgId);
-                    const prevIdx = currentIdx < messages.length - 1 ? currentIdx + 1 : 0;
-                    handleSetOverlayMsg(messages[prevIdx].id);
-                  }}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 cursor-pointer"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                  <span>الرسالة الأقدم (السابقة)</span>
-                </button>
+            {messages.length > 0 && (() => {
+              const currentMsgIndex = messages.findIndex((m) => m.id === activeOverlayMsgId);
+              const isAtOldest = currentMsgIndex >= messages.length - 1;
+              const isAtNewest = currentMsgIndex <= 0 && currentMsgIndex !== -1;
 
-                <button
-                  onClick={() => handleSetOverlayMsg(activeOverlayMsgId ? null : (messages[0]?.id || null))}
-                  className="px-5 py-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30 transition-all cursor-pointer"
-                >
-                  {activeOverlayMsgId ? 'إخفاء الكارت مؤقتاً من البث' : 'إظهار الكارت على البث'}
-                </button>
+              const handleNavOlder = () => {
+                if (isAtOldest) {
+                  setNavAlertMsg('🛑 هذه هي آخر وأقدم رسالة! لا توجد رسائل أخرى بعدها، وتم التثبيت على نفس الرسالة.');
+                  setTimeout(() => setNavAlertMsg(''), 4500);
+                  return;
+                }
+                const nextIdx = currentMsgIndex !== -1 ? currentMsgIndex + 1 : 0;
+                setNavAlertMsg('');
+                handleSetOverlayMsg(messages[nextIdx].id);
+              };
 
-                {nextInLineMsg && (
-                  <button
-                    onClick={handleSkipNext}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/30 transition-all cursor-pointer"
-                  >
-                    <FastForward className="w-4 h-4" />
-                    <span>سكب الرسالة التالية ⏭️</span>
-                  </button>
-                )}
+              const handleNavNewer = () => {
+                if (isAtNewest) {
+                  setNavAlertMsg('🛑 هذه هي أحدث وأول رسالة معروضة! لا توجد رسائل أحدث منها.');
+                  setTimeout(() => setNavAlertMsg(''), 4500);
+                  return;
+                }
+                const nextIdx = currentMsgIndex > 0 ? currentMsgIndex - 1 : 0;
+                setNavAlertMsg('');
+                handleSetOverlayMsg(messages[nextIdx].id);
+              };
 
-                <button
-                  onClick={() => {
-                    const currentIdx = messages.findIndex((m) => m.id === activeOverlayMsgId);
-                    const nextIdx = currentIdx > 0 ? currentIdx - 1 : messages.length - 1;
-                    handleSetOverlayMsg(messages[nextIdx].id);
-                  }}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 cursor-pointer"
-                >
-                  <span>الرسالة الأحدث (التالية)</span>
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+              return (
+                <div className="space-y-3">
+                  {/* Alert banner when reaching the last or first message */}
+                  {navAlertMsg && (
+                    <div className="max-w-md mx-auto p-3 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-black text-center flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40 animate-in fade-in zoom-in-95 duration-200">
+                      <span className="text-base">⚠️</span>
+                      <span>{navAlertMsg}</span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-center gap-2.5">
+                    {/* Older Message */}
+                    <button
+                      type="button"
+                      onClick={handleNavOlder}
+                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        isAtOldest
+                          ? 'bg-slate-900/60 border-amber-500/30 text-amber-300/80'
+                          : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                      }`}
+                      title={isAtOldest ? 'وصلت لآخر رسالة' : 'الانتقال للرسالة السابقة'}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                      <span>الرسالة الأقدم (السابقة)</span>
+                      {isAtOldest && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-black mr-1">
+                          (النهاية 🏁)
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Counter Badge */}
+                    <div className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 flex items-center gap-1.5 shadow-inner">
+                      <span>رسالة</span>
+                      <span className="text-cyan-400 font-mono text-sm">
+                        {currentMsgIndex !== -1 ? currentMsgIndex + 1 : 0}
+                      </span>
+                      <span>من</span>
+                      <span className="font-mono text-sm">{messages.length}</span>
+                      {isAtOldest && messages.length > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-black mr-1">
+                          🏁 آخر رسالة
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Toggle Overlay Hide / Show */}
+                    <button
+                      type="button"
+                      onClick={() => handleSetOverlayMsg(activeOverlayMsgId ? null : (messages[0]?.id || null))}
+                      className="px-4 py-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30 transition-all cursor-pointer"
+                    >
+                      {activeOverlayMsgId ? 'إخفاء الكارت مؤقتاً' : 'إظهار الكارت في اللايف'}
+                    </button>
+
+                    {/* Skip Next button */}
+                    {nextInLineMsg && (
+                      <button
+                        type="button"
+                        onClick={handleSkipNext}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/30 transition-all cursor-pointer"
+                      >
+                        <FastForward className="w-4 h-4" />
+                        <span>سكب التالية ⏭️</span>
+                      </button>
+                    )}
+
+                    {/* Newer Message */}
+                    <button
+                      type="button"
+                      onClick={handleNavNewer}
+                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        isAtNewest
+                          ? 'bg-slate-900/60 border-cyan-500/30 text-cyan-300/80'
+                          : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                      }`}
+                      title={isAtNewest ? 'وصلت لأحدث رسالة' : 'الانتقال للرسالة التالية'}
+                    >
+                      <span>الرسالة الأحدث (التالية)</span>
+                      {isAtNewest && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] font-black ml-1">
+                          (الأحدث)
+                        </span>
+                      )}
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* DEDICATED VISUAL SIZES, COLORS & TRANSPARENCY CUSTOMIZATION PANEL */}
             <div className="p-6 sm:p-7 rounded-3xl bg-[#0f1118] border border-cyan-500/30 shadow-2xl space-y-6">
