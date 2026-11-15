@@ -50,6 +50,8 @@ import {
   PlayCircle,
   Zap,
   Wand2,
+  Lock,
+  KeyRound,
 } from 'lucide-react';
 import Link from 'next/link';
 import { playSound, SOUND_PRESETS, SoundTheme } from '@/lib/sounds';
@@ -346,6 +348,54 @@ export default function DashboardPage() {
         setFormData((prev) => ({ ...prev, avatarUrl: reader.result as string }));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Change Password state and handler
+  const [pwdData, setPwdData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdSuccess, setPwdSuccess] = useState('');
+  const [pwdError, setPwdError] = useState('');
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    setPwdError('');
+    setPwdSuccess('');
+
+    if (pwdData.newPassword !== pwdData.confirmPassword) {
+      setPwdError('كلمة المرور الجديدة غير متطابقة مع خانة التأكيد');
+      return;
+    }
+
+    if (pwdData.newPassword.length < 4) {
+      setPwdError('كلمة المرور الجديدة يجب أن تكون 4 خانات على الأقل');
+      return;
+    }
+
+    setPwdLoading(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          username: currentUser.username,
+          currentPassword: pwdData.currentPassword,
+          newPassword: pwdData.newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPwdSuccess(data.message || 'تم تغيير كلمة المرور وتأمين حسابك بنجاح!');
+        setPwdData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setTimeout(() => setPwdSuccess(''), 5000);
+      } else {
+        setPwdError(data.error || 'تعذر تغيير كلمة المرور');
+      }
+    } catch {
+      setPwdError('حدث خطأ في الاتصال بالخادم');
+    } finally {
+      setPwdLoading(false);
     }
   };
 
@@ -2317,6 +2367,97 @@ export default function DashboardPage() {
                   <>
                     <Sparkles className="w-4 h-4" />
                     <span>حفظ ونشر التعديلات</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Change Password Card */}
+            <form
+              onSubmit={handleChangePassword}
+              className="mt-6 p-6 sm:p-8 rounded-3xl bg-[#0f1117] border border-rose-500/30 shadow-2xl space-y-5"
+            >
+              <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-white flex items-center gap-2">
+                    <KeyRound className="w-5 h-5 text-rose-500" />
+                    <span>تغيير كلمة المرور وأمان الحساب</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    لحماية حسابك، يجب كتابة كلمة المرور الحالية (القديمة) أولاً قبل تعيين كلمة المرور الجديدة.
+                  </p>
+                </div>
+              </div>
+
+              {/* Current (Old) Password */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-rose-400" />
+                  <span>كلمة المرور الحالية (القديمة):</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={pwdData.currentPassword}
+                  onChange={(e) => setPwdData({ ...pwdData, currentPassword: e.target.value })}
+                  placeholder="أدخل كلمة مرورك الحالية للتأكيد"
+                  className="w-full bg-[#181a22] border border-slate-800 focus:border-rose-400 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none font-mono"
+                  dir="ltr"
+                />
+              </div>
+
+              {/* New Password & Confirm Password */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">كلمة المرور الجديدة:</label>
+                  <input
+                    type="password"
+                    required
+                    value={pwdData.newPassword}
+                    onChange={(e) => setPwdData({ ...pwdData, newPassword: e.target.value })}
+                    placeholder="4 خانات على الأقل"
+                    className="w-full bg-[#181a22] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none font-mono"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">تأكيد كلمة المرور الجديدة:</label>
+                  <input
+                    type="password"
+                    required
+                    value={pwdData.confirmPassword}
+                    onChange={(e) => setPwdData({ ...pwdData, confirmPassword: e.target.value })}
+                    placeholder="أعد كتابة كلمة المرور الجديدة"
+                    className="w-full bg-[#181a22] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none font-mono"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              {pwdError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold text-center">
+                  ⚠️ {pwdError}
+                </div>
+              )}
+
+              {pwdSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold text-center">
+                  ✓ {pwdSuccess}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={pwdLoading}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-extrabold text-xs shadow-lg shadow-rose-950/40 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {pwdLoading ? (
+                  <span>جاري التحقق والتحديث...</span>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    <span>تحديث وتأكيد كلمة المرور الجديدة</span>
                   </>
                 )}
               </button>
