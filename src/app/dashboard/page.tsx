@@ -991,23 +991,22 @@ export default function DashboardPage() {
                   )}
 
                   <div className="flex flex-wrap items-center justify-center gap-2.5">
-                    {/* Previous Message (Towards the first message) */}
+                    {/* 1. RIGHT BUTTON (RTL): Next Message (الرسالة التالية) */}
                     <button
                       type="button"
-                      onClick={handleNavPrev}
+                      onClick={handleNavNext}
                       className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        isAtFirst
-                          ? 'bg-slate-900/60 border-slate-700 text-slate-500 cursor-not-allowed'
-                          : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                        isAtLast
+                          ? 'bg-slate-900/60 border-amber-500/30 text-amber-300/80 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white border-cyan-400 shadow-md shadow-cyan-950/40'
                       }`}
-                      title={isAtFirst ? 'أنت في أول رسالة' : 'الانتقال للرسالة السابقة'}
-                      disabled={isAtFirst}
+                      title={isAtLast ? 'وصلت لآخر رسالة' : 'الانتقال للرسالة التالية في الطابور'}
+                      disabled={isAtLast}
                     >
-                      <ChevronRight className="w-4 h-4" />
-                      <span>الرسالة السابقة</span>
-                      {isAtFirst && (
-                        <span className="px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] font-black mr-1">
-                          (البداية 🏁)
+                      <span>الرسالة التالية ⏭️</span>
+                      {isAtLast && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-black mr-1">
+                          (النهاية 🏁)
                         </span>
                       )}
                     </button>
@@ -1048,25 +1047,25 @@ export default function DashboardPage() {
                       </button>
                     )}
 
-                    {/* Next Message (Advance forward in order) */}
+                    {/* 5. LEFT BUTTON (RTL): Previous Message (الرسالة السابقة) */}
                     <button
                       type="button"
-                      onClick={handleNavNext}
+                      onClick={handleNavPrev}
                       className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        isAtLast
-                          ? 'bg-slate-900/60 border-amber-500/30 text-amber-300/80 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white border-cyan-400 shadow-md shadow-cyan-950/40'
+                        isAtFirst
+                          ? 'bg-slate-900/60 border-slate-700 text-slate-500 cursor-not-allowed'
+                          : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
                       }`}
-                      title={isAtLast ? 'وصلت لآخر رسالة' : 'الانتقال للرسالة التالية في الطابور'}
-                      disabled={isAtLast}
+                      title={isAtFirst ? 'أنت في أول رسالة' : 'الرجوع للرسالة السابقة'}
+                      disabled={isAtFirst}
                     >
-                      <span>الرسالة التالية ⏭️</span>
-                      {isAtLast && (
-                        <span className="px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-black ml-1">
-                          (النهاية)
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>الرسالة السابقة</span>
+                      {isAtFirst && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] font-black ml-1">
+                          (البداية)
                         </span>
                       )}
-                      <ChevronLeft className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
